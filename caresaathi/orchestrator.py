@@ -92,6 +92,15 @@ class CareSaathiOrchestrator:
         language: str = "en"
     ) -> Dict[str, Any]:
         """Routes a natural language message with multilingual safety screening and responses."""
+        if not user_message or not user_message.strip():
+            lang = (language or "en").lower()
+            return {
+                "intent": "EMPTY_MESSAGE",
+                "status": "info",
+                "message": LOCALIZED_HELP_MESSAGES.get(lang, LOCALIZED_HELP_MESSAGES["en"]),
+                "language": lang
+            }
+
         text = user_message.strip()
         lower = text.lower()
         patient_id = patient_id or "Demo-Patient-01"

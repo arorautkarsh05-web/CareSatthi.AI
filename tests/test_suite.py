@@ -204,6 +204,95 @@ class TestCareSaathiEndToEnd(unittest.TestCase):
         self.assertEqual(bad_task["status"], "error")
         self.assertIn("not found", bad_task["message"].lower())
 
+    def test_10_missing_medication_timing(self):
+        """Improvement C: Missing medication timing must be flagged as ambiguous without guessing."""
+        plan_text = "1. Tab Amlodipine 5mg\n2. Check blood pressure every morning at 08:00 AM."
+        result = PlanWorkflow.process_new_care_plan(
+            plan_id="plan_timing_test",
+            synthetic_patient_id="PATIENT_TIMING_TEST",
+            patient_name="Timing Test Patient",
+            doctor_name="Dr. Test",
+            diagnosis_context="Hypertension",
+            source_text=plan_text
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["ambiguous_tasks"], 1)
+
+        # Confirm that the ambiguous task mentions timing in reason
+        ambiguous_task = [t for t in result["tasks"] if t["is_ambiguous"]][0]
+        self.assertIn("timing", ambiguous_task["ambiguity_reason"].lower())
+
+        # Confirmation gate must block the ambiguous task from activating
+        conf = PlanWorkflow.confirm_care_plan("plan_timing_test")
+        self.assertEqual(conf["confirmed_tasks_count"], 1)  # Only BP check confirmed
+
+        chk = RoutineWorkflow.get_daily_checklist("PATIENT_TIMING_TEST")
+        active_ids = [t["task_id"] for t in chk["checklist"]]
+        self.assertNotIn(ambiguous_task["task_id"], active_ids)
+
+    def test_11_unconfirmed_care_plan_blocked(self):
+        """Improvement B & C: Unconfirmed tasks must not be activated or updated."""
+        plan_text = "1. Tab Metformin 500mg twice daily at 08:00 AM and 08:00 PM."
+        result = PlanWorkflow.process_new_care_plan(
+            plan_id="plan_unconf_test",
+            synthetic_patient_id="PATIENT_UNCONF_TEST",
+            patient_name="Unconfirmed Patient",
+            doctor_name="Dr. Test",
+            diagnosis_context="Diabetes",
+            source_text=plan_text
+        )
+        task_id = result["tasks"][0]["task_id"]
+
+        # Attempt to mark task as completed before confirmation gate passes
+        update_res = RoutineWorkflow.update_task_status(task_id, "completed")
+        self.assertEqual(update_res["status"], "error")
+        self.assertIn("unconfirmed", update_res["message"].lower())
+
+    def test_12_unsupported_dosage_changes(self):
+        """Improvement C: Dosage change queries must be blocked deterministically."""
+        dosage_queries = [
+            "Can I increase my dose of Atorvastatin to 80mg?",
+            "Can I double my morning dose?",
+            "Can I take 2 tablets instead of 1?",
+            "Should I cut my dose in half?",
+            "Dose badha du kya?",
+            "डोज़ बढ़ा दूं क्या?"
+        ]
+        for query in dosage_queries:
+            eval_res = SafetyWorkflow.evaluate_text_safety(query)
+            self.assertFalse(eval_res["is_safe"], f"Failed to block dosage change query: {query}")
+            self.assertEqual(eval_res["emergency_level"], "clinical_block")
+            self.assertEqual(eval_res["scenario_code"], "BLOCK_CHANGE_DOSAGE")
+            self.assertIn("SAFETY POLICY BLOCK", eval_res["message"])
+
+    def test_13_failed_storage_operations_graceful_handling(self):
+        """Improvement C & D: Failed storage or missing record handling must be graceful."""
+        # Nonexistent plan confirmation
+        bad_plan_conf = PlanWorkflow.confirm_care_plan("nonexistent_plan_000")
+        self.assertEqual(bad_plan_conf["status"], "error")
+        self.assertIn("not found", bad_plan_conf["message"].lower())
+
+        # Invalid task status enum
+        invalid_status = RoutineWorkflow.update_task_status("any_task", "invalid_status_xyz")
+        self.assertEqual(invalid_status["status"], "error")
+        self.assertIn("invalid status", invalid_status["message"].lower())
+
+    def test_14_multilingual_safety_workflow(self):
+        """Improvement C & D: Deterministic 112 emergency routing across supported languages."""
+        multilingual_emergencies = [
+            ("सीने में बहुत तेज दर्द हो रहा है", "hi"),
+            ("chhati me severe dard aur pasina aa raha hai", "hinglish"),
+            ("છાતીમાં ખૂબ દુખાવો થાય છે", "gu"),
+            ("বুকে তীব্র ব্যথা হচ্ছে", "bn")
+        ]
+        for query, lang in multilingual_emergencies:
+            res = SafetyWorkflow.evaluate_text_safety(query, language=lang)
+            self.assertFalse(res["is_safe"])
+            self.assertEqual(res["emergency_level"], "emergency")
+            self.assertEqual(res["emergency_contact"], "112")
+            self.assertIn("112", res["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

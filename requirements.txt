@@ -1,0 +1,11 @@
+# CareSaathi AI Dependencies
+# Fetch-A-Thon 3.0 | GCET Edition
+# Python 3.10+ compatible (tested on Python 3.13)
+
+uagents>=0.26.0
+uagents-core>=0.4.12
+fastapi>=0.110.0
+uvicorn>=0.28.0
+pydantic>=2.0.0
+requests>=2.31.0
+python-dateutil>=2.8.2

@@ -65,19 +65,19 @@ class PlanWorkflow:
         task_counter = 1
 
         for line in lines:
-            # Skip pure headers or metadata markers
-            clean_line = re.sub(r"^[\*\-\•\d\.\)\s]+", "", line).strip()
+            # Skip pure headers or metadata markers without stripping clinical numbers like "15-minute" or "100ml"
+            clean_line = re.sub(r"^(?:[\*\-\•]\s*|\d{1,3}[\.\)\-–]\s*)", "", line).strip()
             if not clean_line or len(clean_line) < 4:
                 continue
 
-            # Skip header and metadata lines like "CARE PLAN:", "MEDICATIONS:", "Patient: ...", "Primary Consultant: ...", etc.
-            if re.search(r"^(?:CARE PLAN|CLINICAL INSTRUCTIONS|DIAGNOSIS|DOCTOR|PATIENT|PRESCRIPTION|RX|DISCHARGE SUMMARY|MEDICATIONS|MONITORING\s*&\s*MEASUREMENTS|REHABILITATION\s*&\s*DIET|FOLLOW-UP|DAILY MEDICATIONS|MEASUREMENTS|DIET\s*&\s*LIFESTYLE|ENDOCRINE CARE INSTRUCTIONS)[\s:]*$", clean_line, re.IGNORECASE):
+            # Skip header and metadata lines like "CARE PLAN:", "CARE PLAN & DISCHARGE INSTRUCTIONS:", "MEDICATIONS:", "Patient: ...", etc.
+            if re.search(r"^(?:CARE PLAN|CLINICAL INSTRUCTIONS|DIAGNOSIS|DOCTOR|PATIENT|PRESCRIPTION|RX|DISCHARGE (?:SUMMARY|INSTRUCTIONS|ADVICE)|MEDICATIONS|MONITORING\s*&\s*MEASUREMENTS|REHABILITATION\s*&\s*DIET|FOLLOW-UP|DAILY MEDICATIONS|MEASUREMENTS|DIET\s*&\s*LIFESTYLE|ENDOCRINE CARE INSTRUCTIONS)(?:\s*(?:&|AND|\/)\s*[A-Z\s]+)?[\s:]*$", clean_line, re.IGNORECASE):
                 continue
-            if re.match(r"^(?:Patient|Age|Ref|Primary Consultant|Consultant|Attending Clinician):", clean_line, re.IGNORECASE):
+            if re.match(r"^(?:Patient|Age|Ref|Primary Consultant|Consultant|Attending Clinician|Date|Hospital|Department):", clean_line, re.IGNORECASE):
                 continue
 
             category, med_name, dosage, freq, scheduled_time = PlanWorkflow._parse_line_attributes(clean_line)
-            is_ambiguous, ambiguity_reason = PlanWorkflow._detect_ambiguity(clean_line, category, med_name, dosage)
+            is_ambiguous, ambiguity_reason = PlanWorkflow._detect_ambiguity(clean_line, category, med_name, dosage, freq, scheduled_time)
 
             task_id = f"{plan_id}_t{task_counter:02d}"
             task = CareTask(
@@ -160,7 +160,14 @@ class PlanWorkflow:
         return category, med_name, dosage, freq, scheduled_time
 
     @staticmethod
-    def _detect_ambiguity(line: str, category: TaskCategory, med_name: Optional[str], dosage: Optional[str]) -> Tuple[bool, Optional[str]]:
+    def _detect_ambiguity(
+        line: str,
+        category: TaskCategory,
+        med_name: Optional[str],
+        dosage: Optional[str],
+        freq: Optional[str] = None,
+        scheduled_time: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
         """FR-03: Detects ambiguity. Never guesses medication, dose, or schedule."""
         lower = line.lower()
 
@@ -169,12 +176,15 @@ class PlanWorkflow:
             if re.search(pattern, lower):
                 return True, reason
 
-        # Check if classified as medication but lacks identifiable medication or dose
+        # Check if classified as medication but lacks identifiable medication, dose, or timing
         if category == TaskCategory.MEDICATION:
             if not dosage and not any(w in lower for w in ["apply", "cream", "ointment", "continue existing"]):
-                return True, "Medication instruction lacks clear dosage (e.g., mg/ml)."
+                return True, "Medication instruction lacks clear dosage (e.g., mg/ml). Check clinician instructions."
             if "pill" in lower and not med_name:
-                return True, "Specific pharmaceutical name is unspecified."
+                return True, "Specific pharmaceutical name is unspecified. Contact clinician for clarification."
+            # Check for completely missing timing/frequency
+            if not freq and not scheduled_time and not any(w in lower for w in ["as needed", "prn", "sos"]):
+                return True, "Medication instruction lacks administration schedule/timing (e.g. morning, daily, bedtime). Please contact clinician."
 
         return False, None
 

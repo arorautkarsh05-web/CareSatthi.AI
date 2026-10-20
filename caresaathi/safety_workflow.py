@@ -247,7 +247,10 @@ CLINICAL_BOUNDARY_PATTERNS = [
         "code": "BLOCK_CHANGE_DOSAGE",
         "pattern": (
             r"\b(?:increase|decrease|double|halve|cut in half|change|modify|adjust|take 2|take two)\s+(?:the\s+|my\s+)?(?:[a-z0-9\-]+\s+)?(?:dose|dosage|amount|milligrams|mg|tablets?|pills?)|"
-            r"\b(?:dose badha|dose kam|dose double|khurak badha|dawai badha|डोज़ बढ़ा|डबल कर|डोज़ कम|ડોઝ વધાર|ડોઝ ડબલ|ডোজ বাড়ਾ)\b"
+            r"\bcut\s+(?:the\s+|my\s+)?(?:[a-z0-9\-]+\s+)?(?:dose|tablet|pill)\s+in\s+half|"
+            r"\b(?:dose|dosage|khurak|dawai)?\s*(?:ko\s*)?(?:badha|kam|double|badhau|ghata)\b|"
+            r"\b(?:dose badha|dose kam|dose double|khurak badha|dawai badha)\b|"
+            r"(?:डोज़|डोज|डोस|खुराक)\s*(?:बढ़ा|बढा|बढ़ा|कम|डबल)|(?:ડોઝ|ડોસ)\s*(?:વધાર|ઓછો|ડબલ)|ডোজ\s*বাড়া"
         )
     },
     {

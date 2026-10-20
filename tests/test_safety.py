@@ -76,6 +76,31 @@ class TestCareSaathiSafety(unittest.TestCase):
         lvl, msg = SafetyWorkflow.evaluate_vital_reading("blood_pressure_systolic", 120.0)
         self.assertEqual(lvl, SafetyEmergencyLevel.NORMAL)
 
+    def test_safety_workflow_error_resilience(self):
+        """Improvement C: Safety workflow handles empty or malformed inputs without crashing."""
+        res_empty = SafetyWorkflow.evaluate_text_safety("")
+        self.assertTrue(res_empty["is_safe"])
+        self.assertEqual(res_empty["emergency_level"], "normal")
+
+        # Unknown vital type returns normal safely
+        lvl, msg = SafetyWorkflow.evaluate_vital_reading("unknown_vital_metric", 999.0)
+        self.assertEqual(lvl, SafetyEmergencyLevel.NORMAL)
+
+    def test_multilingual_emergency_alerts(self):
+        """Improvement C: Emergency alerts in Indian languages return 112 guidance."""
+        alerts = [
+            ("seene me dard aur sans nahi aa rahi", "hinglish"),
+            ("छाती में दर्द और सांस फूल रही है", "hi"),
+            ("ગળું સૂજી ગયું છે અને શ્વાસ લેવામાં તકલીફ", "gu")
+        ]
+        for query, lang in alerts:
+            res = SafetyWorkflow.evaluate_text_safety(query, language=lang)
+            self.assertFalse(res["is_safe"])
+            self.assertEqual(res["emergency_level"], "emergency")
+            self.assertEqual(res["emergency_contact"], "112")
+            self.assertIn("112", res["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -110,53 +110,59 @@ def execute_agent_tool(action: str, payload: Dict[str, Any], patient_id: str) ->
     """FR-10: Executes real state-changing or report-generating tool actions."""
     action_lower = action.lower()
 
-    if action_lower == "set_care_plan":
-        plan_id = payload.get("plan_id", f"plan_{int(datetime.now().timestamp() * 1000)}")
-        return PlanWorkflow.process_new_care_plan(
-            plan_id=plan_id,
-            synthetic_patient_id=patient_id,
-            patient_name=payload.get("patient_name", "Synthetic Patient"),
-            doctor_name=payload.get("doctor_name", "Dr. Mehta, MD"),
-            diagnosis_context=payload.get("diagnosis", "Post-Discharge Recovery"),
-            source_text=payload.get("source_text", "")
-        )
+    try:
+        if action_lower == "set_care_plan":
+            plan_id = payload.get("plan_id", f"plan_{int(datetime.now().timestamp() * 1000)}")
+            return PlanWorkflow.process_new_care_plan(
+                plan_id=plan_id,
+                synthetic_patient_id=patient_id,
+                patient_name=payload.get("patient_name", "Synthetic Patient"),
+                doctor_name=payload.get("doctor_name", "Dr. Mehta, MD"),
+                diagnosis_context=payload.get("diagnosis", "Post-Discharge Recovery"),
+                source_text=payload.get("source_text", "")
+            )
 
-    elif action_lower == "confirm_care_plan":
-        plan_id = payload.get("plan_id")
-        return PlanWorkflow.confirm_care_plan(plan_id, payload.get("task_ids"))
+        elif action_lower == "confirm_care_plan":
+            plan_id = payload.get("plan_id")
+            return PlanWorkflow.confirm_care_plan(plan_id, payload.get("task_ids"))
 
-    elif action_lower == "get_daily_checklist":
-        return RoutineWorkflow.get_daily_checklist(patient_id)
+        elif action_lower == "get_daily_checklist":
+            return RoutineWorkflow.get_daily_checklist(patient_id)
 
-    elif action_lower == "update_task_status":
-        return RoutineWorkflow.update_task_status(
-            task_id=payload.get("task_id", ""),
-            new_status=payload.get("status", "completed"),
-            optional_note=payload.get("note")
-        )
+        elif action_lower == "update_task_status":
+            return RoutineWorkflow.update_task_status(
+                task_id=payload.get("task_id", ""),
+                new_status=payload.get("status", "completed"),
+                optional_note=payload.get("note")
+            )
 
-    elif action_lower == "log_symptom":
-        return MonitoringWorkflow.log_symptom(
-            synthetic_patient_id=patient_id,
-            description=payload.get("description", ""),
-            optional_reading=payload.get("reading"),
-            unit_if_provided=payload.get("unit"),
-            reading_type=payload.get("reading_type")
-        )
+        elif action_lower == "log_symptom":
+            return MonitoringWorkflow.log_symptom(
+                synthetic_patient_id=patient_id,
+                description=payload.get("description", ""),
+                optional_reading=payload.get("reading"),
+                unit_if_provided=payload.get("unit"),
+                reading_type=payload.get("reading_type")
+            )
 
-    elif action_lower == "generate_progress_report":
-        return ReportWorkflow.generate_progress_report(
-            synthetic_patient_id=patient_id,
-            days_back=payload.get("days_back", 7)
-        )
+        elif action_lower == "generate_progress_report":
+            return ReportWorkflow.generate_progress_report(
+                synthetic_patient_id=patient_id,
+                days_back=payload.get("days_back", 7)
+            )
 
-    elif action_lower == "evaluate_safety":
-        return SafetyWorkflow.evaluate_text_safety(payload.get("text", ""))
+        elif action_lower == "evaluate_safety":
+            return SafetyWorkflow.evaluate_text_safety(payload.get("text", ""))
 
-    else:
+        else:
+            return {
+                "status": "error",
+                "message": f"Unknown tool action '{action}'. Available: set_care_plan, confirm_care_plan, get_daily_checklist, update_task_status, log_symptom, generate_progress_report, evaluate_safety."
+            }
+    except Exception as exc:
         return {
             "status": "error",
-            "message": f"Unknown tool action '{action}'. Available: set_care_plan, confirm_care_plan, get_daily_checklist, update_task_status, log_symptom, generate_progress_report, evaluate_safety."
+            "message": f"Tool execution failed for '{action}': {str(exc)}"
         }
 
 

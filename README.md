@@ -62,8 +62,8 @@ Plan Workflow   Routine Workflow  Monitoring      Safety Workflow
 git clone https://github.com/CareSaathi-AI/CareSaathi.git
 cd CareSaathi.AI
 
-# Install required dependencies
-pip install uagents fastapi uvicorn pydantic requests
+# Install required reproducible dependencies
+pip install -r requirements.txt
 ```
 
 ### 3. Run the Automated End-to-End CLI Demo (3-minute Hackathon Script)
@@ -81,12 +81,13 @@ This runs the complete user journey sequentially:
 8. Generates the doctor-ready progress report.
 9. Displays the verified Fetch.ai uAgent identity.
 
-### 4. Run the Full Test Suite (100% Passing)
+### 4. Run the Full Test Suite (19/19 Tests Passing)
 ```powershell
-# Run end-to-end integration tests (FR-01 through FR-12)
-python -m unittest tests/test_suite.py
+# Discover and run all 19 automated integration and safety tests
+python -m unittest discover -s tests -v
 
-# Run dedicated deterministic safety tests
+# Or run separately:
+python -m unittest tests/test_suite.py
 python -m unittest tests/test_safety.py
 ```
 
@@ -114,11 +115,16 @@ Open **[http://127.0.0.1:8080](http://127.0.0.1:8080)** in your browser to acces
 | **Local Endpoint** | `http://127.0.0.1:8008/submit` |
 | **Protocol** | `CareSaathiCoordinationProtocol v1.0.0` |
 | **Supported Tools** | `set_care_plan`, `confirm_care_plan`, `get_daily_checklist`, `update_task_status`, `log_symptom`, `generate_progress_report`, `evaluate_safety` |
+| **Integration Status** | ✅ Locally verified (Agent address, protocol, state-changing tools & unit tests) |
 
 To run the standalone Fetch.ai agent listener:
 ```powershell
 python caresaathi/agent.py
 ```
+
+### Fetch.ai uAgent Integration Status
+- **Implemented & Locally Tested:** Initialisation with deterministic seed, Bech32 address generation, typed protocol handlers (`CareSaathiRequest`, `CareSaathiResponse`), and 7 state-changing tools executed with SQLite transactional store.
+- **Agentverse Registration (Cloud Discovery):** The uAgent can be linked to Agentverse Mailbox for global discoverability by setting `AGENT_MAILBOX_KEY` in environment variables. Local execution functions 100% offline without requiring external API keys.
 
 ---
 
