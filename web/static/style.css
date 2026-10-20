@@ -704,3 +704,333 @@ textarea.form-control {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
+
+/* ==========================================================================
+   Capsule Login Modal & Security Timeout Styles
+   ========================================================================== */
+
+#mainAppWrapper {
+  transition: filter 0.35s ease, opacity 0.35s ease;
+}
+
+#mainAppWrapper.main-app-locked {
+  filter: blur(14px) brightness(0.65);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* User Session Badge in Header */
+.user-session-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+}
+
+.user-session-name {
+  color: #e0f2fe;
+  font-weight: 600;
+}
+
+/* Capsule Modal Overlay */
+.capsule-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.85) 0%, rgba(3, 7, 18, 0.96) 100%);
+  backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.capsule-modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Capsule Card Container */
+.capsule-card {
+  position: relative;
+  background: linear-gradient(150deg, rgba(22, 30, 49, 0.95), rgba(11, 15, 29, 0.98));
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-radius: 32px;
+  max-width: 480px;
+  width: 100%;
+  padding: 36px 32px;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.85), 0 0 50px rgba(6, 182, 212, 0.15);
+  text-align: center;
+  transform: scale(0.92);
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.capsule-modal-overlay.active .capsule-card {
+  transform: scale(1);
+}
+
+.capsule-card.shake {
+  animation: capsuleShake 0.45s ease-in-out;
+}
+
+.capsule-card.success-exit {
+  animation: capsuleSuccessExit 0.45s forwards ease-in-out;
+}
+
+@keyframes capsuleShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
+}
+
+@keyframes capsuleSuccessExit {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(0.85); opacity: 0; }
+}
+
+/* Glowing Top Pill Badge */
+.capsule-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6ee7b7;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.capsule-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-teal);
+  box-shadow: 0 0 8px var(--accent-teal);
+  animation: pulse-dot 1.8s infinite;
+}
+
+.capsule-icon-wrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(16, 185, 129, 0.25));
+  border: 1px solid rgba(6, 182, 212, 0.4);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.25);
+}
+
+.capsule-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.capsule-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* Form Inputs inside Capsule */
+.capsule-input-group {
+  text-align: left;
+  margin-bottom: 18px;
+}
+
+.capsule-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
+.capsule-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(11, 15, 29, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.capsule-input-wrap:focus-within {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.25);
+}
+
+.capsule-input-wrap.has-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+.capsule-input-icon {
+  padding-left: 14px;
+  font-size: 15px;
+  color: #94a3b8;
+}
+
+.capsule-input-prefix {
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #38bdf8;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.capsule-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+}
+
+.capsule-input::placeholder {
+  color: #64748b;
+}
+
+.capsule-field-error {
+  font-size: 11px;
+  color: #f87171;
+  margin-top: 5px;
+  min-height: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Security Timeout Banner */
+.capsule-timeout-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.timeout-icon {
+  font-size: 28px;
+}
+
+.timeout-text {
+  font-size: 13px;
+  color: #fecaca;
+  line-height: 1.4;
+}
+
+.timeout-countdown {
+  display: inline-block;
+  background: #ef4444;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+/* Attempts Indicator */
+.capsule-attempts-indicator {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.capsule-attempts-indicator span {
+  font-weight: 700;
+  color: #f59e0b;
+}
+
+/* Submit Button */
+.capsule-submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-teal));
+  border: none;
+  border-radius: var(--radius-full);
+  color: #0b0f19;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 14px 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+}
+
+.capsule-submit-btn:hover:not(:disabled) {
+  opacity: 0.94;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+}
+
+.capsule-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(0.5);
+}
+
+.capsule-footer-note {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* Overall Error Banner */
+.capsule-error-msg {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin-bottom: 16px;
+  text-align: left;
+}

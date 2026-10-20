@@ -10,6 +10,7 @@ let currentSyntheticPlans = {};
 let pendingTaskAction = { taskId: null, status: null };
 
 document.addEventListener("DOMContentLoaded", () => {
+  initCapsuleAuth();
   initTabs();
   initAgentInfo();
   initSyntheticPresets();
@@ -703,4 +704,217 @@ function initChatWorkflow() {
       console.error("Chat error:", err);
     }
   });
+}
+
+// ==========================================================================
+// Capsule Login Authentication & Security Timeout (2 Invalid -> 10s Cooldown)
+// ==========================================================================
+
+let failedAuthAttempts = 0;
+let isCooldownActive = false;
+let cooldownInterval = null;
+
+function initCapsuleAuth() {
+  const modal = document.getElementById("loginCapsuleModal");
+  const form = document.getElementById("capsuleLoginForm");
+  const nameInput = document.getElementById("loginName");
+  const emailInput = document.getElementById("loginEmail");
+  const mobileInput = document.getElementById("loginMobile");
+  const submitBtn = document.getElementById("btnLoginSubmit");
+  const card = document.getElementById("capsuleCard");
+  const timeoutBanner = document.getElementById("capsuleTimeoutBanner");
+  const cooldownTimerSpan = document.getElementById("cooldownTimer");
+  const attemptsCountSpan = document.getElementById("attemptsCount");
+  const mainWrapper = document.getElementById("mainAppWrapper");
+  const userBadge = document.getElementById("userSessionBadge");
+  const userNameSpan = document.getElementById("userSessionName");
+  const logoutBtn = document.getElementById("btnLogoutSession");
+
+  // Check if session is already authenticated
+  const savedUser = sessionStorage.getItem("caresaathi_authenticated_user");
+  if (savedUser) {
+    try {
+      const userObj = JSON.parse(savedUser);
+      unlockDashboard(userObj);
+    } catch (e) {
+      sessionStorage.removeItem("caresaathi_authenticated_user");
+    }
+  }
+
+  // Real-time mobile input digits filter (only allow digits, max 10)
+  mobileInput.addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+    clearFieldError("mobile");
+  });
+
+  nameInput.addEventListener("input", () => clearFieldError("name"));
+  emailInput.addEventListener("input", () => clearFieldError("email"));
+
+  // Form Submit Handler
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (isCooldownActive) return;
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const mobile = mobileInput.value.trim();
+
+    // Validation
+    let isValid = true;
+
+    // 1. Name validation (min 2 characters, valid letters/spaces)
+    if (!name || name.length < 2 || !/^[a-zA-Z\s.]{2,50}$/.test(name)) {
+      setFieldError("name", "⚠️ Please enter a valid name (at least 2 letters, alphabetic).");
+      isValid = false;
+    } else {
+      clearFieldError("name");
+    }
+
+    // 2. Email validation (RFC 5322 standard email regex)
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email || !emailRegex.test(email)) {
+      setFieldError("email", "⚠️ Enter a valid email address (e.g. name@domain.com).");
+      isValid = false;
+    } else {
+      clearFieldError("email");
+    }
+
+    // 3. Mobile validation (10 digits starting with 6, 7, 8, or 9)
+    const mobileRegex = /^[6-9]\d{9}$/;
+    if (!mobile || !mobileRegex.test(mobile)) {
+      setFieldError("mobile", "⚠️ Enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.");
+      isValid = false;
+    } else {
+      clearFieldError("mobile");
+    }
+
+    // If validation fails
+    if (!isValid) {
+      failedAuthAttempts++;
+      attemptsCountSpan.textContent = failedAuthAttempts;
+      card.classList.remove("shake");
+      void card.offsetWidth; // Trigger reflow to restart CSS shake animation
+      card.classList.add("shake");
+
+      showToast(`Invalid credentials! Failed attempt ${failedAuthAttempts}/2`, "error");
+
+      // Check if 2 failed attempts reached -> trigger 10-second security cooldown
+      if (failedAuthAttempts >= 2) {
+        startSecurityCooldown();
+      }
+      return;
+    }
+
+    // Validation Succeeded!
+    failedAuthAttempts = 0;
+    attemptsCountSpan.textContent = "0";
+
+    const userObj = {
+      name,
+      email,
+      mobile: "+91 " + mobile,
+      loginTime: new Date().toISOString()
+    };
+    sessionStorage.setItem("caresaathi_authenticated_user", JSON.stringify(userObj));
+
+    // Success animation on capsule card
+    card.classList.add("success-exit");
+    showToast(`Verification successful! Welcome, ${name}.`, "success");
+
+    setTimeout(() => {
+      unlockDashboard(userObj);
+      card.classList.remove("success-exit");
+    }, 380);
+  });
+
+  // Logout / Switch User handler
+  logoutBtn.addEventListener("click", () => {
+    sessionStorage.removeItem("caresaathi_authenticated_user");
+    mainWrapper.classList.add("main-app-locked");
+    userBadge.style.display = "none";
+    modal.classList.add("active");
+    nameInput.value = "";
+    emailInput.value = "";
+    mobileInput.value = "";
+    clearFieldError("name");
+    clearFieldError("email");
+    clearFieldError("mobile");
+    failedAuthAttempts = 0;
+    attemptsCountSpan.textContent = "0";
+    showToast("Session closed. Authenticate to access dashboard.", "info");
+  });
+
+  function unlockDashboard(userObj) {
+    modal.classList.remove("active");
+    mainWrapper.classList.remove("main-app-locked");
+    userBadge.style.display = "flex";
+    userNameSpan.textContent = userObj.name;
+
+    // Update patient name across UI forms
+    const planPatientNameInput = document.getElementById("planPatientName");
+    if (planPatientNameInput) {
+      planPatientNameInput.value = `${userObj.name} (Verified)`;
+    }
+  }
+
+  function setFieldError(field, msg) {
+    const wrap = document.getElementById(`wrap${capitalize(field)}`);
+    const err = document.getElementById(`${field}Error`);
+    if (wrap) wrap.classList.add("has-error");
+    if (err) err.textContent = msg;
+  }
+
+  function clearFieldError(field) {
+    const wrap = document.getElementById(`wrap${capitalize(field)}`);
+    const err = document.getElementById(`${field}Error`);
+    if (wrap) wrap.classList.remove("has-error");
+    if (err) err.textContent = "";
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  function startSecurityCooldown() {
+    isCooldownActive = true;
+    let secondsLeft = 10;
+    timeoutBanner.style.display = "flex";
+    cooldownTimerSpan.textContent = secondsLeft;
+
+    // Disable inputs and button
+    nameInput.disabled = true;
+    emailInput.disabled = true;
+    mobileInput.disabled = true;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span>⏳ Security Timeout (${secondsLeft}s)...</span>`;
+
+    showToast("⚠️ 2 invalid attempts detected! 10-second security timeout started.", "warning");
+
+    clearInterval(cooldownInterval);
+    cooldownInterval = setInterval(() => {
+      secondsLeft--;
+      cooldownTimerSpan.textContent = secondsLeft;
+      submitBtn.innerHTML = `<span>⏳ Security Timeout (${secondsLeft}s)...</span>`;
+
+      if (secondsLeft <= 0) {
+        clearInterval(cooldownInterval);
+        isCooldownActive = false;
+        failedAuthAttempts = 0;
+        attemptsCountSpan.textContent = "0";
+        timeoutBanner.style.display = "none";
+
+        // Re-enable inputs
+        nameInput.disabled = false;
+        emailInput.disabled = false;
+        mobileInput.disabled = false;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Verify & Unlock Care Dashboard →</span>`;
+
+        clearFieldError("name");
+        clearFieldError("email");
+        clearFieldError("mobile");
+        showToast("Timeout expired. You may now enter your details.", "info");
+      }
+    }, 1000);
+  }
 }

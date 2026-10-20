@@ -9,32 +9,44 @@
 </head>
 <body>
 
-  <!-- Emergency Disclaimer Banner -->
-  <div class="emergency-banner" id="emergencyBanner">
-    <strong>SAFETY NOTICE</strong>
-    CareSaathi AI is an administrative care coordinator and operates strictly on clinician-approved plans. In case of acute medical emergencies, call <strong>112 (India National Emergency)</strong> or seek immediate emergency care.
-  </div>
+  <!-- Main App Wrapper (Locked with blur until capsule login authentication succeeds) -->
+  <div id="mainAppWrapper" class="main-app-locked">
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="brand-section">
-        <div class="brand-logo">🩺</div>
-        <div class="brand-title">
-          <h1>CareSaathi AI</h1>
-          <div class="brand-subtitle">Doctor-Guided Home Care Coordination • Fetch-A-Thon 3.0</div>
-        </div>
-      </div>
-
-      <div class="header-meta">
-        <div class="agent-badge" id="agentBadge" title="Fetch.ai uAgent Online">
-          <div class="agent-status-dot"></div>
-          <span>Fetch.ai uAgent:</span>
-          <span class="agent-address" id="agentAddressDisplay">agent1q039...</span>
-        </div>
-      </div>
+    <!-- Emergency Disclaimer Banner -->
+    <div class="emergency-banner" id="emergencyBanner">
+      <strong>SAFETY NOTICE</strong>
+      CareSaathi AI is an administrative care coordinator and operates strictly on clinician-approved plans. In case of acute medical emergencies, call <strong>112 (India National Emergency)</strong> or seek immediate emergency care.
     </div>
-  </header>
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="brand-section">
+          <div class="brand-logo">🩺</div>
+          <div class="brand-title">
+            <h1>CareSaathi AI</h1>
+            <div class="brand-subtitle">Doctor-Guided Home Care Coordination • Fetch-A-Thon 3.0</div>
+          </div>
+        </div>
+
+        <div class="header-meta">
+          <div class="agent-badge" id="agentBadge" title="Fetch.ai uAgent Online">
+            <div class="agent-status-dot"></div>
+            <span>Fetch.ai uAgent:</span>
+            <span class="agent-address" id="agentAddressDisplay">agent1q039...</span>
+          </div>
+
+          <!-- User Authenticated Session Badge -->
+          <div class="user-session-badge" id="userSessionBadge" style="display: none;">
+            <span class="user-session-avatar">👤</span>
+            <span class="user-session-name" id="userSessionName">User</span>
+            <button class="btn btn-secondary btn-sm" id="btnLogoutSession" title="Change User / Test Login Again" style="padding: 3px 8px; font-size: 11px;">
+              🔓 Switch User
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
 
   <!-- Main Container -->
   <main class="app-container">
@@ -395,9 +407,78 @@
           </ul>
         </div>
       </div>
-    </section>
-
   </main>
+  </div><!-- End #mainAppWrapper -->
+
+  <!-- Capsule Authentication Modal Overlay (User requested Login Authentication) -->
+  <div class="capsule-modal-overlay active" id="loginCapsuleModal">
+    <div class="capsule-card" id="capsuleCard">
+      <div class="capsule-badge-pill">
+        <span class="capsule-pulse-dot"></span>
+        CareSaathi Security Gateway
+      </div>
+      <div class="capsule-icon-wrap">
+        🛡️
+      </div>
+      <h2 class="capsule-title">Patient & Caregiver Login</h2>
+      <p class="capsule-subtitle">
+        Enter your credentials to unlock your doctor-guided care checklist and tracking dashboard.
+      </p>
+
+      <!-- Security Timeout Alert Banner (2 invalid attempts -> 10s cooldown) -->
+      <div class="capsule-timeout-banner" id="capsuleTimeoutBanner" style="display: none;">
+        <div class="timeout-icon">⏱️</div>
+        <div class="timeout-text">
+          <strong>Security Cooldown Active!</strong><br>
+          2 invalid attempts detected. Please wait <span class="timeout-countdown" id="cooldownTimer">10</span>s before trying again.
+        </div>
+      </div>
+
+      <!-- General Error Message Banner -->
+      <div class="capsule-error-msg" id="capsuleErrorMsg" style="display: none;"></div>
+
+      <form id="capsuleLoginForm" novalidate autocomplete="on">
+        <div class="capsule-input-group">
+          <label for="loginName" class="capsule-label">Full Name</label>
+          <div class="capsule-input-wrap" id="wrapName">
+            <span class="capsule-input-icon">👤</span>
+            <input type="text" id="loginName" class="capsule-input" placeholder="e.g. Ramesh Sharma" required autocomplete="name">
+          </div>
+          <div class="capsule-field-error" id="nameError"></div>
+        </div>
+
+        <div class="capsule-input-group">
+          <label for="loginEmail" class="capsule-label">Email ID</label>
+          <div class="capsule-input-wrap" id="wrapEmail">
+            <span class="capsule-input-icon">✉️</span>
+            <input type="email" id="loginEmail" class="capsule-input" placeholder="e.g. ramesh.sharma@example.com" required autocomplete="email">
+          </div>
+          <div class="capsule-field-error" id="emailError"></div>
+        </div>
+
+        <div class="capsule-input-group">
+          <label for="loginMobile" class="capsule-label">Mobile Number (10 Digits)</label>
+          <div class="capsule-input-wrap" id="wrapMobile">
+            <span class="capsule-input-prefix">+91</span>
+            <input type="tel" id="loginMobile" class="capsule-input" placeholder="9876543210" maxlength="10" required autocomplete="tel">
+          </div>
+          <div class="capsule-field-error" id="mobileError"></div>
+        </div>
+
+        <div class="capsule-attempts-indicator" id="attemptsIndicator">
+          Failed attempts: <span id="attemptsCount">0</span>/2 (10s timeout after 2 failed attempts)
+        </div>
+
+        <button type="submit" class="capsule-submit-btn" id="btnLoginSubmit">
+          <span>Verify & Unlock Care Dashboard →</span>
+        </button>
+      </form>
+
+      <div class="capsule-footer-note">
+        🔒 Doctor-Guided Home Care Protocol • Fetch.ai uAgent Protected
+      </div>
+    </div>
+  </div>
 
   <!-- Note Modal for Task Update -->
   <div class="modal-overlay" id="taskNoteModal">
