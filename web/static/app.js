@@ -642,11 +642,155 @@ function renderMarkdownToHtml(md) {
   return outputLines.join("\n");
 }
 
-// Chat Workflow
+// Chat Workflow with Multilingual Support (English, Hindi, Hinglish, Gujarati, Bengali, Marathi, Telugu, Tamil, Punjabi)
+let currentChatLanguage = "en";
+
+const MULTILINGUAL_CHAT_CONFIG = {
+  en: {
+    name: "English",
+    placeholder: "Ask for today's checklist, log a symptom, or paste care instructions...",
+    greeting: "Hello! I am your doctor-guided home care coordinator. You can ask for today's checklist, log a symptom, or request a progress report.",
+    prompts: [
+      "Show today's checklist",
+      "Generate progress report",
+      "Mild headache after morning walk",
+      "Can I stop taking Aspirin?"
+    ]
+  },
+  hi: {
+    name: "हिन्दी (Hindi)",
+    placeholder: "आज की चेकलिस्ट पूछें, लक्षण दर्ज करें या सवाल पूछें...",
+    greeting: "नमस्ते! मैं आपका डॉक्टर-निर्देशित केयरसाथी AI हूँ। आप आज की दवाइयों की चेकलिस्ट देख सकते हैं, लक्षण दर्ज कर सकते हैं या डॉक्टर रिपोर्ट बनवा सकते हैं।",
+    prompts: [
+      "आज की चेकलिस्ट दिखाओ",
+      "डॉक्टर रिपोर्ट बनाओ",
+      "हल्का सिरदर्द और कमजोरी महसूस हो रही है",
+      "क्या मैं दवा बंद कर दूं?"
+    ]
+  },
+  hinglish: {
+    name: "Hinglish",
+    placeholder: "Aaj ka checklist pucho, symptom log karo, ya query pucho...",
+    greeting: "Namaste! Main aapka CareSaathi AI home care coordinator hoon. Aap aaj ki routine check kar sakte hain, symptoms log kar sakte hain, ya doctor report bana sakte hain.",
+    prompts: [
+      "Aaj ka checklist dikhao",
+      "Doctor progress report generate karo",
+      "Thoda sir dard aur thakan lag rahi hai",
+      "Kya main aspirin band kar du?"
+    ]
+  },
+  gu: {
+    name: "ગુજરાતી (Gujarati)",
+    placeholder: "આજનો ચેકલિસ્ટ પૂછો, લક્ષણો નોંધો...",
+    greeting: "નમસ્તે! હું તમારો CareSaathi AI કેર કોઓર્ડિનેટર છું. તમે આજની દવાઓની યાદી જોઈ શકો છો અથવા રિપોર્ટ બનાવી શકો છો.",
+    prompts: [
+      "આજનો ચેકલિસ્ટ બતાવો",
+      "ડૉક્ટર રિપોર્ટ બનાવો",
+      "સવારે ચાલ્યા પછી થોડું માથું દુખે છે",
+      "શું હું દવા બંધ કરી શકું?"
+    ]
+  },
+  bn: {
+    name: "বাংলা (Bengali)",
+    placeholder: "আজকের চেকলিস্ট জিজ্ঞাসা করুন, উপসর্গ রেকর্ড করুন...",
+    greeting: "নমস্কার! আমি আপনার CareSaathi AI কেয়ার কোঅর্ডিনেটর। আপনি আজকের ওষুধের রুটিন দেখতে পারেন বা ডাক্তারের রিপোর্ট তৈরি করতে পারেন।",
+    prompts: [
+      "আজকের চেকলিস্ট দেখাও",
+      "ডাক্তারের রিপোর্ট তৈরি করুন",
+      "সামান্য মাথা ব্যথা করছে",
+      "আমি কি ওষুধ বন্ধ করতে পারি?"
+    ]
+  },
+  mr: {
+    name: "मराठी (Marathi)",
+    placeholder: "आजची चेकलिस्ट विचारा, लक्षणे नोंदवा...",
+    greeting: "नमस्कार! मी तुमचा CareSaathi AI केअर कोऑर्डिनेटर आहे. आपण आजची औषधांची दिनचर्या पाहू शकता किंवा अहवाल तयार करू शकता.",
+    prompts: [
+      "आजची चेकलिस्ट दाखवा",
+      "अहवाल तयार करा",
+      "सकाळी डोकेदुखी जाणवत आहे",
+      "मी औषध बंद करू का?"
+    ]
+  },
+  te: {
+    name: "తెలుగు (Telugu)",
+    placeholder: "నేటి చెక్‌లిస్ట్ అడగండి, లక్షణాలను నమోదు చేయండి...",
+    greeting: "నమస్కారం! నేను మీ CareSaathi AI సంరక్షణ సమన్వయకర్తను. మీరు నేటి మందుల వివరాలు చూడవచ్చు లేదా నివేదికను రూపొందించవచ్చు.",
+    prompts: [
+      "నేటి చెక్‌లిస్ట్ చూపించు",
+      "వైద్యుడి నివేదిక పొందండి",
+      "కొద్దిగా తలనెప్పిగా ఉంది"
+    ]
+  },
+  ta: {
+    name: "தமிழ் (Tamil)",
+    placeholder: "இன்றைய பட்டியலைக் கேளுங்கள், அறிகுறிகளைப் பதிவு செய்யுங்கள்...",
+    greeting: "வணக்கம்! நான் உங்கள் CareSaathi AI பராமரிப்பு ஒருங்கிணைப்பாளர். இன்றைய மருந்துகளைப் பார்க்கலாம் அல்லது அறிக்கை உருவாக்கலாம்.",
+    prompts: [
+      "இன்றைய பட்டியல் காட்டு",
+      "அறிக்கை உருவாக்கு",
+      "லேசான தலைவலி உள்ளது"
+    ]
+  },
+  pa: {
+    name: "ਪੰਜਾਬੀ (Punjabi)",
+    placeholder: "ਅੱਜ ਦੀ ਚੈੱਕਲਿਸਟ ਪੁੱਛੋ, ਲੱਛਣ ਦਰਜ ਕਰੋ...",
+    greeting: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡਾ CareSaathi AI ਕੇਅਰ ਕੋਆਰਡੀਨੇਟਰ ਹਾਂ। ਤੁਸੀਂ ਅੱਜ ਦੀਆਂ ਦਵਾਈਆਂ ਦੀ ਸੂਚੀ ਦੇਖ ਸਕਦੇ ਹੋ।",
+    prompts: [
+      "ਅੱਜ ਦੀ ਚੈੱਕਲਿਸਟ ਦਿਖਾਓ",
+      "ਰਿਪੋਰਟ ਬਣਾਓ",
+      "ਸਿਰ ਦਰਦ ਹੋ ਰਿਹਾ ਹੈ"
+    ]
+  }
+};
+
 function initChatWorkflow() {
   const form = document.getElementById("chatForm");
   const input = document.getElementById("chatInput");
   const messages = document.getElementById("chatMessages");
+  const langSelect = document.getElementById("chatLanguageSelect");
+  const langBadge = document.getElementById("chatCurrentLangBadge");
+  const promptContainer = document.getElementById("chatQuickPrompts");
+  const initialGreeting = document.getElementById("chatInitialGreeting");
+
+  // Render prompts on load
+  updateChatLanguageUI("en");
+
+  if (langSelect) {
+    langSelect.addEventListener("change", (e) => {
+      const selectedLang = e.target.value;
+      currentChatLanguage = selectedLang;
+      updateChatLanguageUI(selectedLang);
+      showToast(`Chat language set to ${MULTILINGUAL_CHAT_CONFIG[selectedLang]?.name || selectedLang}`, "info");
+    });
+  }
+
+  function updateChatLanguageUI(lang) {
+    const config = MULTILINGUAL_CHAT_CONFIG[lang] || MULTILINGUAL_CHAT_CONFIG["en"];
+    if (langBadge) langBadge.textContent = `Current: ${config.name}`;
+    if (input) input.placeholder = config.placeholder;
+    if (initialGreeting) {
+      initialGreeting.innerHTML = `<strong>CareSaathi AI (${config.name}):</strong> ${config.greeting}`;
+    }
+
+    // Populate quick suggestion prompt chips
+    if (promptContainer) {
+      promptContainer.innerHTML = "";
+      config.prompts.forEach(pText => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "preset-chip";
+        chip.style.fontSize = "12px";
+        chip.style.padding = "4px 12px";
+        chip.textContent = pText;
+        chip.addEventListener("click", () => {
+          input.value = pText;
+          form.dispatchEvent(new Event("submit", { cancelable: true }));
+        });
+        promptContainer.appendChild(chip);
+      });
+    }
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -672,7 +816,10 @@ function initChatWorkflow() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({
+          message: text,
+          language: currentChatLanguage
+        })
       });
       const data = await res.json();
 
@@ -695,7 +842,8 @@ function initChatWorkflow() {
         agentDiv.style.borderColor = "rgba(245, 158, 11, 0.4)";
         agentDiv.innerHTML = `<strong>🛑 Clinical Boundary:</strong> ${data.message}`;
       } else {
-        agentDiv.innerHTML = `<strong>CareSaathi AI:</strong> ${data.message.replace(/\n/g, '<br>')}`;
+        const langLabel = MULTILINGUAL_CHAT_CONFIG[data.language || currentChatLanguage]?.name || "CareSaathi AI";
+        agentDiv.innerHTML = `<strong>CareSaathi AI (${langLabel}):</strong><br>${data.message.replace(/\n/g, '<br>')}`;
       }
 
       messages.appendChild(agentDiv);

@@ -78,6 +78,7 @@ class SafetyCheckInput(BaseModel):
 class ChatInput(BaseModel):
     message: str
     patient_id: str = "Demo-Patient-01"
+    language: str = "en"
 
 
 # API Endpoints
@@ -190,7 +191,11 @@ def api_get_progress_report(patient_id: Optional[str] = None, days_back: int = 7
 @app.post("/api/chat")
 def api_chat(input_data: ChatInput):
     """Chat message routed through CareSaathi Orchestrator & Safety screening."""
-    return orchestrator.process_message(input_data.message, input_data.patient_id)
+    return orchestrator.process_message(
+        input_data.message,
+        input_data.patient_id,
+        language=input_data.language
+    )
 
 
 # Serve Static Files

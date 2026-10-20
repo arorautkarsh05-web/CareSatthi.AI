@@ -366,8 +366,37 @@
           Natural language interface powered by the CareSaathi Orchestrator. Checks permissions, applies safety screening, and dispatches to specialist workflows.
         </p>
 
-        <div id="chatMessages" style="height: 380px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
-          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: var(--radius-md); font-size: 14px;">
+        <!-- Language Switcher Bar -->
+        <div class="chat-lang-bar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; background: rgba(0,0,0,0.25); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--bg-card-border); flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+            <span style="font-size: 16px;">🌐</span>
+            <label for="chatLanguageSelect" style="color: #94a3b8; font-weight: 500;">Chat Language:</label>
+            <select id="chatLanguageSelect" class="form-control" style="width: auto; padding: 4px 12px; font-size: 13px; height: 34px; background: #0f172a; border-color: rgba(6, 182, 212, 0.4);">
+              <option value="en" selected>English (Default)</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="hinglish">Hinglish</option>
+              <option value="gu">ગુજરાતી (Gujarati)</option>
+              <option value="bn">বাংলা (Bengali)</option>
+              <option value="mr">मराठी (Marathi)</option>
+              <option value="te">తెలుగు (Telugu)</option>
+              <option value="ta">தமிழ் (Tamil)</option>
+              <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+            </select>
+          </div>
+          <div id="chatCurrentLangBadge" class="task-time-badge" style="font-size: 11px;">
+            Current: English
+          </div>
+        </div>
+
+        <!-- Quick Multilingual Suggestion Chips -->
+        <div style="margin-bottom: 12px;">
+          <div class="preset-bar" id="chatQuickPrompts" style="margin-bottom: 0;">
+            <!-- Populated dynamically by JS -->
+          </div>
+        </div>
+
+        <div id="chatMessages" style="height: 360px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: var(--radius-md); font-size: 14px;" id="chatInitialGreeting">
             <strong>CareSaathi AI:</strong> Hello! I am your doctor-guided home care coordinator. You can paste a care plan, ask for your daily checklist, record a symptom, or request a clinician progress report.
           </div>
         </div>
