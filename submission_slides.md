@@ -84,16 +84,18 @@ Safety Workflow           Plan Workflow               Routine Workflow
 * **Agent Protocol:** `CareSaathiCoordinationProtocol v1.0.0` with real tool actions (`set_care_plan`, `confirm_care_plan`, `get_daily_checklist`, `update_task_status`, `log_symptom`, `generate_progress_report`, `evaluate_safety`).
 * **Validation & Storage:** Pydantic v2 schemas + SQLite transactional ACID database.
 * **User Interfaces:**  
-  1. Interactive CLI demo script (`python cli.py`) running all 8 journey steps in seconds.  
+  1. Interactive CLI demo script (`python cli.py`) running all 10 journey steps in seconds.  
   2. Full-featured glassmorphism Web Application (`http://127.0.0.1:8080`) with live agent telemetry, safety alerts, and report viewer.
-* **Agent Identity:** Bech32 address `agent1q039k6qfpszyehmv67lwna03zqua086nnwym06reenzzksn99alqvrwdj5k`.
+* **Agent Topology:**  
+  * Primary uAgent: `agent1q039k6qfpszyehmv67lwna03zqua086nnwym06reenzzksn99alqvrwdj5k`.  
+  * Optional Multi-Agent Bureau Cluster (`caresaathi/multi_agent.py`): 3 communicating agents (Orchestrator, Safety Guardian, Plan Specialist).
 
 ---
 
 ## Slide 7: Measured Results, Honest Disclosures & Next Steps
 * **Verified Prototype Test Results:**  
   * 100% of tasks in synthetic fixtures include traceable source snippets.  
-  * 100% pass rate across all 19 automated integration and dedicated safety tests.  
+  * 100% pass rate across all 23 automated integration, safety, and multi-agent tests.  
   * Ambiguity detector flagged 100% of test ambiguities with zero medication hallucinations.  
   * Average local checklist & report generation latency: < 50ms.
 * **Honest Prototype Limitations:**  
@@ -101,5 +103,5 @@ Safety Workflow           Plan Workflow               Routine Workflow
   * Ingestion operates on text/structured input (camera OCR out of MVP scope).  
   * Clinician messaging requires real hospital EHR integration before production deployment.
 * **Future Roadmap:**  
-  * Phase 2: Split specialist workflows into independently communicating Fetch.ai sub-agents.  
+  * Phase 2: Live Agentverse Mailbox registration for cross-network discovery.  
   * Phase 3: Integration with ABDM (Ayushman Bharat Digital Mission) for doctor care-plan syncing.

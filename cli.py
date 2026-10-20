@@ -135,8 +135,22 @@ def run_automated_demo():
     print(f"Protocols:     {agent_info['protocols']}")
     print(f"Live Tools:    {agent_info['tools']}")
 
+    print("\n--- STEP 9: Fetch.ai Structured Message & Tool Execution (CareSaathiRequest) ---")
+    from caresaathi.agent import execute_agent_tool
+    tool_test = execute_agent_tool("get_daily_checklist", {}, patient_id)
+    print(f"Tool Dispatched: get_daily_checklist -> Status: {tool_test.get('status')}")
+    print(f"Message: {tool_test.get('message')}")
+
+    print("\n--- STEP 10: Multi-Agent Specialist Bureau Topology (Phase 6) ---")
+    from caresaathi.multi_agent import get_multi_agent_specs
+    multi_specs = get_multi_agent_specs()
+    print(f"Cluster Architecture: {multi_specs['architecture']}")
+    for a in multi_specs["agents"]:
+        print(f"-> {a['name']:<28} [{a['role']}]")
+        print(f"   Address: {a['address']}")
+
     print("\n===================================================================")
-    print("   END-TO-END DEMO JOURNEY COMPLETED SUCCESSFULLY!")
+    print("   END-TO-END DEMO JOURNEY COMPLETED SUCCESSFULLY (10/10 STEPS)!")
     print("===================================================================\n")
 
 

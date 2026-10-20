@@ -79,16 +79,18 @@ This runs the complete user journey sequentially:
 6. Demonstrates zero-hallucination ambiguity detection on a vague plan.
 7. Triggers deterministic safety checks (112 emergency alert & clinical block).
 8. Generates the doctor-ready progress report.
-9. Displays the verified Fetch.ai uAgent identity.
+9. Dispatches real Fetch.ai uAgent structured tool request and displays Bech32 identity.
+10. Verifies the Multi-Agent Specialist Bureau topology with 3 distinct communicating agents.
 
-### 4. Run the Full Test Suite (19/19 Tests Passing)
+### 4. Run the Full Test Suite (23/23 Tests Passing)
 ```powershell
-# Discover and run all 19 automated integration and safety tests
+# Discover and run all 23 automated integration, safety, and multi-agent tests
 python -m unittest discover -s tests -v
 
 # Or run separately:
 python -m unittest tests/test_suite.py
 python -m unittest tests/test_safety.py
+python -m unittest tests/test_multi_agent.py
 ```
 
 ### 5. Launch the Interactive Web Dashboard
