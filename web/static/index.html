@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareSaathi AI - Doctor-Guided Home Care Coordination Agent</title>
+  <meta name="description" content="CareSaathi AI turns doctor-approved care plans into traceable daily actions, tracks symptoms, and prepares clinician-ready reports using Fetch.ai uAgents.">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Emergency Disclaimer Banner -->
+  <div class="emergency-banner" id="emergencyBanner">
+    <strong>SAFETY NOTICE</strong>
+    CareSaathi AI is an administrative care coordinator and operates strictly on clinician-approved plans. In case of acute medical emergencies, call <strong>112 (India National Emergency)</strong> or seek immediate emergency care.
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-logo">🩺</div>
+        <div class="brand-title">
+          <h1>CareSaathi AI</h1>
+          <div class="brand-subtitle">Doctor-Guided Home Care Coordination • Fetch-A-Thon 3.0</div>
+        </div>
+      </div>
+
+      <div class="header-meta">
+        <div class="agent-badge" id="agentBadge" title="Fetch.ai uAgent Online">
+          <div class="agent-status-dot"></div>
+          <span>Fetch.ai uAgent:</span>
+          <span class="agent-address" id="agentAddressDisplay">agent1q039...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button class="nav-tab active" data-tab="tab-plan" id="tabBtnPlan">
+        <span>📋</span> Care Plan Setup & Confirmation Gate
+      </button>
+      <button class="nav-tab" data-tab="tab-checklist" id="tabBtnChecklist">
+        <span>✅</span> Daily Care Checklist
+      </button>
+      <button class="nav-tab" data-tab="tab-symptoms" id="tabBtnSymptoms">
+        <span>🩺</span> Symptom & Vitals Log
+      </button>
+      <button class="nav-tab" data-tab="tab-safety" id="tabBtnSafety">
+        <span>🛡️</span> Deterministic Safety Sandbox
+      </button>
+      <button class="nav-tab" data-tab="tab-report" id="tabBtnReport">
+        <span>📄</span> Doctor Progress Report
+      </button>
+      <button class="nav-tab" data-tab="tab-chat" id="tabBtnChat">
+        <span>💬</span> Agent Chat
+      </button>
+      <button class="nav-tab" data-tab="tab-agent" id="tabBtnAgent">
+        <span>🤖</span> Fetch.ai Identity
+      </button>
+    </nav>
+
+    <!-- TAB 1: Care Plan Setup & Confirmation Gate -->
+    <section class="tab-content active" id="tab-plan">
+      <div class="grid-2col">
+        <!-- Input Form -->
+        <div class="glass-card">
+          <div class="card-title">
+            <span>1. Ingest Doctor-Approved Plan</span>
+            <span class="task-category-pill">FR-01, FR-02</span>
+          </div>
+          <p class="card-description">
+            Paste clear text from a clinician's care plan. Quick-load synthetic scenarios to test extraction and ambiguity flags.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Load Synthetic Presets (FR-12):</label>
+            <div class="preset-bar">
+              <button class="preset-chip" id="loadPresetCabg">🫀 Post-CABG Recovery</button>
+              <button class="preset-chip" id="loadPresetDm">🩸 Diabetes & HTN</button>
+              <button class="preset-chip" id="loadPresetAmbiguous">⚠️ Ambiguous Test Plan</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="planPatientName">Patient Name (Synthetic):</label>
+            <input type="text" class="form-control" id="planPatientName" value="Ramesh Sharma (Synthetic Demo)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="planDoctorName">Treating Clinician:</label>
+            <input type="text" class="form-control" id="planDoctorName" value="Dr. K. S. Mehta, MS MCh (Cardiothoracic Surgery)">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="planDiagnosis">Clinical Context / Diagnosis:</label>
+            <input type="text" class="form-control" id="planDiagnosis" value="Post-CABG Surgery Day 7 Home Recovery">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="planSourceText">Doctor's Care Plan Text:</label>
+            <textarea class="form-control" id="planSourceText" placeholder="Paste doctor's instructions here..."></textarea>
+          </div>
+
+          <button class="btn btn-primary" id="btnExtractPlan" style="width: 100%;">
+            <span>⚡ Extract Structured Tasks & Trace Sources</span>
+          </button>
+        </div>
+
+        <!-- Extracted Tasks & Confirmation Gate -->
+        <div class="glass-card">
+          <div class="card-title">
+            <span>2. Confirmation Gate</span>
+            <span class="badge-status badge-pending" id="confirmationGateBadge">Gate: Proposed</span>
+          </div>
+          <p class="card-description">
+            Tasks remain in a <strong>proposed</strong> state until patient/caregiver confirmation. Ambiguous instructions are flagged and blocked from activation (FR-03, FR-04).
+          </p>
+
+          <div id="planExtractionSummary" style="display: none; margin-bottom: 14px;">
+            <div class="preset-bar">
+              <span class="preset-chip" id="summaryTotalTasks">Total Tasks: 0</span>
+              <span class="preset-chip" id="summaryProposedTasks">Proposed: 0</span>
+              <span class="preset-chip" id="summaryAmbiguousTasks" style="color: #f59e0b;">Ambiguities: 0</span>
+            </div>
+          </div>
+
+          <div class="task-list" id="extractedTasksList">
+            <p style="color: var(--text-dim); text-align: center; padding: 40px 0;">
+              No care plan extracted yet. Select a preset on the left or paste text to extract tasks.
+            </p>
+          </div>
+
+          <div style="margin-top: 18px; display: flex; gap: 10px;">
+            <button class="btn btn-primary" id="btnConfirmPlan" style="flex: 1;" disabled>
+              <span>✅ Confirm & Activate Tasks in Daily Checklist (FR-04)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: Daily Care Checklist -->
+    <section class="tab-content" id="tab-checklist">
+      <!-- Stats Overview -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-value" id="statTotalTasks">0</div>
+          <div class="stat-label">Total Active Tasks</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="statCompletedTasks" style="color: var(--accent-teal);">0</div>
+          <div class="stat-label">Completed Today</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="statPendingTasks" style="color: var(--status-pending);">0</div>
+          <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="statAdherenceRate" style="color: var(--accent-cyan);">0%</div>
+          <div class="stat-label">Plan Adherence</div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="card-title">
+          <span>Today's Care Routine (Chronological Checklist)</span>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshChecklist">🔄 Refresh</button>
+        </div>
+        <p class="card-description">
+          Active tasks confirmed from the doctor's plan. Every task displays its traceable source snippet and preserves timestamps on update (FR-05, FR-06).
+        </p>
+
+        <div class="task-list" id="dailyChecklistContainer">
+          <p style="color: var(--text-dim); text-align: center; padding: 40px 0;">
+            No confirmed tasks in checklist. Ingest and confirm a plan in Step 1 first.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Symptom & Vitals Log -->
+    <section class="tab-content" id="tab-symptoms">
+      <div class="grid-2col">
+        <!-- Log Form -->
+        <div class="glass-card">
+          <div class="card-title">
+            <span>Log Patient-Reported Observation</span>
+            <span class="task-category-pill">FR-07</span>
+          </div>
+          <p class="card-description">
+            Records timestamped home observations and readings. Entries are explicitly labeled as <strong>patient-reported</strong> and never used to infer automated medical diagnoses.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label" for="symptomDesc">Symptom / Observation Description:</label>
+            <input type="text" class="form-control" id="symptomDesc" placeholder="e.g. Mild headache after morning walk, resting now">
+          </div>
+
+          <div class="grid-2col" style="gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="symptomReading">Numerical Reading (Optional):</label>
+              <input type="number" step="any" class="form-control" id="symptomReading" placeholder="e.g. 128">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="symptomReadingType">Measurement Type:</label>
+              <select class="form-control" id="symptomReadingType">
+                <option value="">None / Note Only</option>
+                <option value="blood_pressure">Blood Pressure (Systolic mmHg)</option>
+                <option value="blood_glucose">Blood Glucose (mg/dL)</option>
+                <option value="spo2">Oxygen Saturation SpO2 (%)</option>
+                <option value="temperature">Body Temperature (°F)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Quick Observation Tags:</label>
+            <div class="preset-bar">
+              <button class="preset-chip quick-sym-tag" data-text="Mild fatigue after walk, resting in bed.">Tiredness</button>
+              <button class="preset-chip quick-sym-tag" data-text="Slight headache on waking, took water.">Headache</button>
+              <button class="preset-chip quick-sym-tag" data-text="Morning blood pressure check" data-reading="124" data-type="blood_pressure">Resting BP 124</button>
+              <button class="preset-chip quick-sym-tag" data-text="Fasting blood glucose check" data-reading="108" data-type="blood_glucose">Fasting Sugar 108</button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" id="btnLogSymptom" style="width: 100%;">
+            <span>📝 Save Timestamped Patient-Reported Entry</span>
+          </button>
+        </div>
+
+        <!-- History -->
+        <div class="glass-card">
+          <div class="card-title">
+            <span>Patient-Reported History</span>
+            <span class="badge-status badge-completed">Patient-Reported</span>
+          </div>
+          <p class="card-description">
+            Chronological log of home observations ready for clinician review.
+          </p>
+
+          <div class="task-list" id="symptomHistoryList">
+            <p style="color: var(--text-dim); text-align: center; padding: 40px 0;">
+              No patient symptoms logged yet.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Deterministic Safety Sandbox -->
+    <section class="tab-content" id="tab-safety">
+      <div class="grid-2col">
+        <div class="glass-card">
+          <div class="card-title">
+            <span>Deterministic Safety & Boundary Tester</span>
+            <span class="task-category-pill" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5;">FR-08</span>
+          </div>
+          <p class="card-description">
+            Test CareSaathi's deterministic safety policies. Prohibited actions (stopping drugs, altering doses, diagnosing) are strictly blocked. Red-flag emergencies trigger immediate <strong>112 escalation</strong> without conversational delays.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Pre-configured Test Scenarios (PRD Section 4.3 & 8):</label>
+            <div class="preset-bar" style="flex-direction: column; gap: 8px;">
+              <button class="preset-chip safety-test-chip" data-text="I am having sudden heavy chest pain and tight pressure radiating to my left arm.">
+                🚨 Emergency 1: Severe Crushing Chest Pain -> 112
+              </button>
+              <button class="preset-chip safety-test-chip" data-text="I can't breathe properly and I am gasping for air.">
+                🚨 Emergency 2: Acute Dyspnea (Shortness of Breath) -> 112
+              </button>
+              <button class="preset-chip safety-test-chip" data-text="Can I stop taking my Aspirin tablets? My stomach burns.">
+                🛑 Boundary 1: Prohibited "Can I Stop Medication?"
+              </button>
+              <button class="preset-chip safety-test-chip" data-text="Can I double my Metformin dose to 1000mg today?">
+                🛑 Boundary 2: Prohibited "Can I Change/Double Dosage?"
+              </button>
+              <button class="preset-chip safety-test-chip" data-text="Do I have a stroke or heart attack?">
+                🛑 Boundary 3: Prohibited Diagnostic Query
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="customSafetyQuery">Custom Test Query:</label>
+            <input type="text" class="form-control" id="customSafetyQuery" placeholder="Type an arbitrary patient query to test safety guardrails...">
+          </div>
+
+          <button class="btn btn-secondary" id="btnTestSafety" style="width: 100%;">
+            <span>🛡️ Run Deterministic Safety Evaluation</span>
+          </button>
+        </div>
+
+        <!-- Safety Test Output -->
+        <div class="glass-card">
+          <div class="card-title">
+            <span>Safety Evaluation Result</span>
+            <span id="safetyLevelBadge" class="badge-status badge-pending">Waiting for test</span>
+          </div>
+          <p class="card-description">
+            Transparent execution report showing rule code, action taken, and emergency guidance.
+          </p>
+
+          <div id="safetyResultContainer" style="padding: 20px; background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-md); min-height: 200px;">
+            <p style="color: var(--text-dim); text-align: center; padding-top: 40px;">
+              Click a test scenario on the left to see the deterministic safety policy in action.
+            </p>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <h4 style="font-size: 14px; margin-bottom: 8px; color: var(--text-muted);">Recent Safety Escalation Events:</h4>
+            <div id="recentSafetyEventsList" style="font-size: 13px; max-height: 180px; overflow-y: auto;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Doctor Progress Report -->
+    <section class="tab-content" id="tab-report">
+      <div class="glass-card">
+        <div class="card-title">
+          <span>Clinician-Ready Progress Report</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" id="btnRefreshReport">🔄 Regenerate</button>
+            <button class="btn btn-primary btn-sm" id="btnPrintReport">🖨️ Print / Save PDF</button>
+          </div>
+        </div>
+        <p class="card-description">
+          Dated, traceable summary combining completed/skipped/delayed tasks, patient-reported symptoms, and unresolved clinical questions with timestamps and source links (FR-09).
+        </p>
+
+        <div class="report-viewer" id="reportContentContainer">
+          <p style="text-align: center; padding: 40px; color: var(--text-dim);">
+            Generating clinician progress summary...
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: Agent Chat -->
+    <section class="tab-content" id="tab-chat">
+      <div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+        <div class="card-title">
+          <span>CareSaathi Orchestrator Chat</span>
+          <span class="badge-status badge-completed">Fetch.ai Connected</span>
+        </div>
+        <p class="card-description">
+          Natural language interface powered by the CareSaathi Orchestrator. Checks permissions, applies safety screening, and dispatches to specialist workflows.
+        </p>
+
+        <div id="chatMessages" style="height: 380px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px; border-radius: var(--radius-md); font-size: 14px;">
+            <strong>CareSaathi AI:</strong> Hello! I am your doctor-guided home care coordinator. You can paste a care plan, ask for your daily checklist, record a symptom, or request a clinician progress report.
+          </div>
+        </div>
+
+        <form id="chatForm" style="display: flex; gap: 10px;">
+          <input type="text" class="form-control" id="chatInput" placeholder="Ask for today's checklist, log a symptom, or paste care instructions..." autocomplete="off">
+          <button type="submit" class="btn btn-primary" id="btnChatSend">Send</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- TAB 7: Fetch.ai uAgent Identity -->
+    <section class="tab-content" id="tab-agent">
+      <div class="glass-card" style="max-width: 900px; margin: 0 auto;">
+        <div class="card-title">
+          <span>Fetch.ai uAgent Specifications & Discovery</span>
+          <span class="badge-status badge-completed">Verified Active</span>
+        </div>
+        <p class="card-description">
+          Direct verification metrics conforming to Fetch.ai Hackathon MVP criteria (FR-10, PRD Section 6.4).
+        </p>
+
+        <div style="background: rgba(0, 0, 0, 0.35); border-radius: var(--radius-md); padding: 20px; font-family: monospace; font-size: 13px; line-height: 1.8;">
+          <div><strong style="color: #38bdf8;">Agent Name:</strong> <span id="agentSpecName">caresaathi_agent</span></div>
+          <div><strong style="color: #38bdf8;">Bech32 Address:</strong> <span id="agentSpecAddress" style="color: #a7f3d0;">loading...</span></div>
+          <div><strong style="color: #38bdf8;">Local Endpoint:</strong> <span id="agentSpecEndpoint">http://127.0.0.1:8008/submit</span></div>
+          <div><strong style="color: #38bdf8;">Protocol:</strong> <span style="color: #fde68a;">CareSaathiCoordinationProtocol v1.0.0</span></div>
+          <div style="margin-top: 10px;"><strong style="color: #38bdf8;">Registered Tool Actions (State-Changing & Read):</strong></div>
+          <ul style="padding-left: 24px; color: #e2e8f0;">
+            <li><code>set_care_plan</code> - Ingests care plan text, extracts tasks, links sources, flags ambiguities.</li>
+            <li><code>confirm_care_plan</code> - Enforces confirmation gate before tasks activate in daily routine.</li>
+            <li><code>get_daily_checklist</code> - Returns active tasks sorted chronologically.</li>
+            <li><code>update_task_status</code> - Updates task state (completed/skipped/delayed) with timestamp & audit event.</li>
+            <li><code>log_symptom</code> - Logs patient-reported observation & vitals; runs deterministic safety rules.</li>
+            <li><code>generate_progress_report</code> - Compiles dated clinician summary with adherence & audit trail.</li>
+            <li><code>evaluate_safety</code> - Deterministically checks red flags (112) and clinical boundaries.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Note Modal for Task Update -->
+  <div class="modal-overlay" id="taskNoteModal">
+    <div class="modal-content">
+      <h3 style="font-size: 18px; margin-bottom: 8px;" id="modalTaskTitle">Update Task Status</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;" id="modalTaskInstruction"></p>
+      
+      <div class="form-group">
+        <label class="form-label" for="modalTaskNote">Optional Note (Caregiver / Patient observation):</label>
+        <input type="text" class="form-control" id="modalTaskNote" placeholder="e.g. Taken with breakfast and full glass of water">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" id="btnCancelTaskUpdate">Cancel</button>
+        <button class="btn btn-primary" id="btnConfirmTaskUpdate">Confirm Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Emergency 112 Alert Modal -->
+  <div class="modal-overlay" id="emergencyModal">
+    <div class="modal-content modal-emergency">
+      <div class="emergency-icon-banner">🚨</div>
+      <h2 style="font-size: 22px; color: #ef4444; text-align: center; margin-bottom: 8px;">URGENT EMERGENCY ALERT</h2>
+      <p style="font-size: 14px; color: #fca5a5; text-align: center; line-height: 1.6;" id="emergencyModalText">
+        Your reported symptoms indicate a potential acute medical emergency.
+      </p>
+
+      <a href="tel:112" class="call-112-btn">
+        📞 CALL 112 IMMEDIATELY
+      </a>
+
+      <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 14px;">
+        CareSaathi AI cannot provide medical treatment or diagnose emergencies. Do not delay seeking emergency care.
+      </p>
+
+      <div style="margin-top: 16px; text-align: center;">
+        <button class="btn btn-secondary btn-sm" id="btnCloseEmergencyModal">Dismiss Notice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
