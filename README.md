@@ -50,6 +50,18 @@ Plan Workflow   Routine Workflow  Monitoring      Safety Workflow
 
 ---
 
+## 📚 Comprehensive Project Documentation
+
+Detailed technical and product documentation is available in the [`docs/`](./docs/README.md) directory:
+
+- 📋 **[Product Requirement Document (PRD)](./docs/PRD.md):** Complete specifications for FR-01 through FR-09, user personas, data models, and clinical acceptance criteria.
+- 🛡️ **[Security, Safety & Threat Analysis](./docs/SECURITY_ANALYSIS.md):** STRIDE threat model, OWASP Top 10 for LLMs defense matrix, India DPDP Act 2023, and sub-2ms 112 emergency guardrails.
+- ⚙️ **[Tech Stack & Feasibility Analysis](./docs/TECH_STACK_AND_FEASIBILITY.md):** Detailed breakdown of Fetch.ai uAgents, FastAPI, SQLite WAL mode, resource benchmarks (~85MB RAM), and economic viability.
+- 💡 **[Innovation & Technological Differentiation](./docs/INNOVATION_AND_DIFFERENTIATION.md):** 6 key architectural breakthroughs and feature comparison matrix vs. ChatGPT, Ada Health, Practo, and Medisafe.
+- 🚀 **[Future Scope & Strategic Roadmap](./docs/FUTURE_SCOPE.md):** 5-phase expansion plan covering ABDM/ABHA integration, FHIR EHR sync, BLE wearables, and edge vision OCR.
+
+---
+
 ## 🚀 Quick Start Guide
 
 ### 1. Prerequisites
@@ -82,15 +94,17 @@ This runs the complete user journey sequentially:
 9. Dispatches real Fetch.ai uAgent structured tool request and displays Bech32 identity.
 10. Verifies the Multi-Agent Specialist Bureau topology with 3 distinct communicating agents.
 
-### 4. Run the Full Test Suite (23/23 Tests Passing)
+### 4. Run the Full Test Suite (27/27 Tests Passing, 75+ Scenarios)
 ```powershell
-# Discover and run all 23 automated integration, safety, and multi-agent tests
-python -m unittest discover -s tests -v
+# Discover and run all 27 automated integration, safety, benchmark, and multi-agent tests
+python -m unittest discover -s tests -p "test_*.py" -v
 
 # Or run separately:
 python -m unittest tests/test_suite.py
 python -m unittest tests/test_safety.py
 python -m unittest tests/test_multi_agent.py
+python -m unittest tests/test_plan_benchmark.py
+python -m unittest tests/test_safety_benchmark.py
 ```
 
 ### 5. Launch the Interactive Web Dashboard

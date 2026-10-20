@@ -10,6 +10,7 @@ let currentSyntheticPlans = {};
 let pendingTaskAction = { taskId: null, status: null };
 
 document.addEventListener("DOMContentLoaded", () => {
+  initBackgroundVideo();
   initCapsuleAuth();
   initTabs();
   initAgentInfo();
@@ -26,6 +27,25 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchChecklist();
   fetchReport();
 });
+
+// Background Video Continuous Playback Resilience
+function initBackgroundVideo() {
+  const bgVideo = document.getElementById("bgVideo");
+  if (!bgVideo) return;
+  bgVideo.muted = true;
+  const playPromise = bgVideo.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(() => {
+      // Browser autoplay policy fallback on first user gesture
+      const startPlayback = () => {
+        bgVideo.play().catch(() => {});
+      };
+      document.addEventListener("click", startPlayback, { once: true });
+      document.addEventListener("keydown", startPlayback, { once: true });
+      document.addEventListener("touchstart", startPlayback, { once: true });
+    });
+  }
+}
 
 // Toast Notifications Helper
 function showToast(message, type = "info") {
@@ -149,20 +169,48 @@ function initPlanWorkflow() {
 
       renderExtractedTasks(data.tasks);
 
-      // Update Gate Status
-      const gateBadge = document.getElementById("confirmationGateBadge");
-      gateBadge.className = "badge-status badge-pending";
-      gateBadge.textContent = "Gate: Proposed (Awaiting Confirmation)";
-
       btnConfirm.disabled = data.proposed_tasks === 0;
 
       // Summary chips
-      document.getElementById("planExtractionSummary").style.display = "block";
-      document.getElementById("summaryTotalTasks").textContent = `Total Tasks: ${data.total_tasks}`;
-      document.getElementById("summaryProposedTasks").textContent = `Proposed: ${data.proposed_tasks}`;
-      document.getElementById("summaryAmbiguousTasks").textContent = `Ambiguities: ${data.ambiguous_tasks}`;
+      const planSummary = document.getElementById("planExtractionSummary");
+      if (planSummary) planSummary.style.display = "block";
+      const elTotal = document.getElementById("summaryTotalTasks");
+      if (elTotal) elTotal.textContent = `Total Tasks: ${data.total_tasks}`;
+      const elProp = document.getElementById("summaryProposedTasks");
+      if (elProp) elProp.textContent = `Proposed: ${data.proposed_tasks}`;
+      const elAmb = document.getElementById("summaryAmbiguousTasks");
+      if (elAmb) elAmb.textContent = `Ambiguities: ${data.ambiguous_tasks}`;
 
-      showToast(`Extracted ${data.total_tasks} tasks. Review against original source.`, "info");
+      // Update Gate Status & Emergency Banner control
+      const gateBadge = document.getElementById("confirmationGateBadge");
+      const emergencyBanner = document.getElementById("planEmergencyBanner");
+      const emergencyText = document.getElementById("planEmergencyBannerText");
+      if (data.emergency_detected) {
+        if (emergencyBanner) emergencyBanner.style.display = "block";
+        if (emergencyText && data.emergency_message) emergencyText.textContent = data.emergency_message;
+        gateBadge.className = "badge-status";
+        gateBadge.style.background = "rgba(239, 68, 68, 0.3)";
+        gateBadge.style.color = "#f87171";
+        gateBadge.style.border = "1px solid #ef4444";
+        gateBadge.textContent = "Gate: 🚨 Emergency Red Flag (Seek Immediate Assistance - Call 112)";
+        showToast("🚨 EMERGENCY WARNING: Red-flag symptoms detected. Seek medical assistance immediately or dial 112.", "error");
+      } else if (data.clinical_blocks_count > 0 || (data.proposed_tasks === 0 && data.ambiguous_tasks > 0)) {
+        if (emergencyBanner) emergencyBanner.style.display = "none";
+        gateBadge.className = "badge-status badge-delayed";
+        gateBadge.style.background = "rgba(245, 158, 11, 0.25)";
+        gateBadge.style.color = "#fbbf24";
+        gateBadge.style.border = "1px solid #f59e0b";
+        gateBadge.textContent = "Gate: 🛑 Blocked (Clinician Clarification Required)";
+      } else {
+        if (emergencyBanner) emergencyBanner.style.display = "none";
+        gateBadge.className = "badge-status badge-pending";
+        gateBadge.style.background = "";
+        gateBadge.style.color = "";
+        gateBadge.style.border = "";
+        gateBadge.textContent = "Gate: Proposed (Awaiting Confirmation)";
+      }
+
+      showToast(`Extracted ${data.total_tasks} tasks. Review against original source.`, data.emergency_detected ? "error" : "info");
     } catch (err) {
       showToast("Failed to extract care plan.", "error");
       console.error(err);
@@ -217,16 +265,35 @@ function renderExtractedTasks(tasks) {
     item.className = "task-item";
 
     const isAmb = task.is_ambiguous;
-    const badgeHtml = isAmb
-      ? `<span class="badge-status badge-delayed" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">Ambiguous (Requires Doctor Clarification)</span>`
-      : `<span class="badge-status badge-pending">Proposed</span>`;
+    const isEmergency = task.emergency_level === "emergency" || (task.ambiguity_reason && task.ambiguity_reason.includes("EMERGENCY RED FLAG"));
+    const isClinicalBlock = task.emergency_level === "clinical_block" || (task.ambiguity_reason && task.ambiguity_reason.includes("CLINICAL SAFETY BLOCK"));
 
-    const ambiguityBox = isAmb
-      ? `<div class="task-ambiguity-alert">
+    let badgeHtml = "";
+    let ambiguityBox = "";
+
+    if (isEmergency) {
+      badgeHtml = `<span class="badge-status" style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid #ef4444; font-weight: 700;">🚨 Emergency Red Flag (Seek Immediate Assistance)</span>`;
+      ambiguityBox = `<div class="task-ambiguity-alert" style="background: rgba(239, 68, 68, 0.18); border-left: 4px solid #ef4444; color: #fca5a5;">
+           <div style="font-weight: 800; color: #f87171; font-size: 13px; margin-bottom: 4px;">🚨 URGENT EMERGENCY MEDICAL GUIDANCE (DIAL 112)</div>
+           ${task.ambiguity_reason || task.safety_warning || "Potential life-threatening symptoms detected. Seek emergency medical care immediately."}
+           <div style="margin-top: 6px; font-size: 11px; color: #e2e8f0;">CareSaathi does not diagnose conditions or claim clinical certainty. Immediate evaluation by emergency clinicians is advised.</div>
+         </div>`;
+    } else if (isClinicalBlock) {
+      badgeHtml = `<span class="badge-status" style="background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid #f59e0b; font-weight: 700;">🛑 Safety Block (Doctor Clarification Required)</span>`;
+      ambiguityBox = `<div class="task-ambiguity-alert" style="background: rgba(245, 158, 11, 0.15); border-left: 4px solid #f59e0b; color: #fde68a;">
+           <div style="font-weight: 800; color: #fbbf24; font-size: 13px; margin-bottom: 4px;">🛑 Clinician Clarification Required Before Modification</div>
+           ${task.ambiguity_reason || task.safety_warning || "Unauthorized medication modification or discontinuation detected. Blocked from activation."}
+           <div style="margin-top: 6px; font-size: 11px; color: #cbd5e1;">Prescribed medications cannot be stopped or changed without explicit clinician authorization. Original instruction preserved.</div>
+         </div>`;
+    } else if (isAmb) {
+      badgeHtml = `<span class="badge-status badge-delayed" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">Ambiguous (Requires Doctor Clarification)</span>`;
+      ambiguityBox = `<div class="task-ambiguity-alert">
            ⚠️ <strong>Clarification Required:</strong> ${task.ambiguity_reason}
            <br><span style="font-size: 11px;">CareSaathi does not invent missing doses or instructions. Flagged for next consult.</span>
-         </div>`
-      : "";
+         </div>`;
+    } else {
+      badgeHtml = `<span class="badge-status badge-pending">Proposed</span>`;
+    }
 
     item.innerHTML = `
       <div class="task-item-header">
@@ -990,6 +1057,12 @@ function initCapsuleAuth() {
     failedAuthAttempts = 0;
     attemptsCountSpan.textContent = "0";
     showToast("Session closed. Authenticate to access dashboard.", "info");
+
+    // Ensure background video keeps running smoothly
+    const bgVideo = document.getElementById("bgVideo");
+    if (bgVideo && bgVideo.paused) {
+      bgVideo.play().catch(() => {});
+    }
   });
 
   function unlockDashboard(userObj) {
@@ -997,6 +1070,13 @@ function initCapsuleAuth() {
     mainWrapper.classList.remove("main-app-locked");
     userBadge.style.display = "flex";
     userNameSpan.textContent = userObj.name;
+
+    // Ensure background video keeps playing continuously on dashboard
+    const bgVideo = document.getElementById("bgVideo");
+    if (bgVideo) {
+      bgVideo.muted = true;
+      bgVideo.play().catch(() => {});
+    }
 
     // Update patient name across UI forms
     const planPatientNameInput = document.getElementById("planPatientName");

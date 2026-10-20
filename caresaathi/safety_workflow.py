@@ -3,6 +3,7 @@ Enforces deterministic safety policies, clinical boundaries, and emergency escal
 Strictly conforms to PRD Section 8 and FR-08 with full Multilingual Support.
 """
 import re
+import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional, Tuple
 from caresaathi.config import NATIONAL_EMERGENCY_NUMBER, AMBULANCE_NUMBER
@@ -193,7 +194,7 @@ EMERGENCY_SCENARIOS = [
     {
         "code": "EMERGENCY_CHEST_PAIN",
         "keywords": [
-            r"chest\s+(?:\w+\s+){0,3}pain", r"pain\s+(?:in\s+)?(?:the\s+)?chest", r"chest\s+pressure", r"tightness\s+(?:in\s+)?(?:the\s+)?chest", r"crushing\s+chest", r"pain\s+radiating\s+to\s+(?:arm|jaw|back)",
+            r"chest\s+(?:\w+\s+){0,4}(?:pain|pen|pan)", r"pain\s+(?:in\s+)?(?:the\s+)?chest", r"chest\s+pressure", r"tightness\s+(?:in\s+)?(?:the\s+)?chest", r"crushing\s+chest", r"pain\s+radiating\s+to\s+(?:arm|jaw|back)",
             r"(?:chhati|seene|chati|dil)\s+(?:me\s+)?(?:\w+\s+){0,3}dard",
             r"(?:छाती|सीने|हार्ट|दिल)\s+(?:में\s+)?(?:\S+\s+){0,3}दर्द",
             r"छातीत\s+(?:\S+\s+){0,2}दुखणे", r"છાતીમાં\s+(?:\S+\s+){0,2}દુખાવો", r"বুকে\s+(?:\S+\s+){0,2}ব্যথা", r"గుండెల్లో\s+నొప్పి", r"நெஞ்சு\s+வலி", r"ਛਾਤੀ\s+ਵਿੱਚ\s+ਦਰਦ"
@@ -202,9 +203,11 @@ EMERGENCY_SCENARIOS = [
     {
         "code": "EMERGENCY_SEVERE_DYSPNEA",
         "keywords": [
-            r"severe\s+shortness\s+of\s+breath", r"can'?t\s+breathe", r"struggling\s+to\s+breathe", r"gasping\s+for\s+air", r"choking", r"blue\s+lips",
+            r"severe\s+shortness\s+of\s+breath", r"shortness\s+of\s+breath", r"can'?t\s+breathe", r"struggling\s+to\s+breathe",
+            r"difficulty\s+breathing", r"breathing\s+difficulty", r"trouble\s+breathing", r"hard\s+to\s+breathe", r"unable\s+to\s+breathe",
+            r"breathless(?:ness)?", r"gasping\s+for\s+air", r"choking", r"blue\s+lips",
             r"saans\s+(?:nahi|phool|lene\s+me\s+takleef)", r"sans\s+(?:nahi\s+aa\s+rahi|phool)", r"dum\s+ghut",
-            r"सांस\s+(?:लेने\s+में\s+तकलीफ|फूल|नहीं\s+आ\s+रही)", r"श्वास\s+घेण्यास\s+त्रास", r"શ્વાસ\s+લેવામાં\s+તકલીફ", r"শ্বাসকষ্ট", r"శ్వాస\s+ఆడకపోవడం", r"மூச்சுத்\s+திணறல்", r"ਸਾਹ\s+ਲੈਣ\s+ਵਿੱਚ\s+ਤਕਲੀਫ"
+            r"सांस\s+(?:लेने\s+में\s+तकलीफ|फूल|नहीं\s+आ\s+रही)", r"श्वास\s+घेण्यास\s+त्रास", r"શ્વાસ\s+લેવામાં\s+તકલીફ", r"শ্বাসকষ্ট", r"శ్వాస\s+ఆడకపోవడం", r"మూச்சுத்\s+திணறல்", r"ਸਾਹ\s+ਲੈਣ\s+ਵਿੱਚ\s+ਤਕਲੀਫ"
         ]
     },
     {
@@ -246,8 +249,8 @@ CLINICAL_BOUNDARY_PATTERNS = [
     {
         "code": "BLOCK_CHANGE_DOSAGE",
         "pattern": (
-            r"\b(?:increase|decrease|double|halve|cut in half|change|modify|adjust|take 2|take two)\s+(?:the\s+|my\s+)?(?:[a-z0-9\-]+\s+)?(?:dose|dosage|amount|milligrams|mg|tablets?|pills?)|"
-            r"\bcut\s+(?:the\s+|my\s+)?(?:[a-z0-9\-]+\s+)?(?:dose|tablet|pill)\s+in\s+half|"
+            r"\b(?:increase|increasing|decrease|decreasing|double|doubling(?:\s+the|\s+up|\s+a)?|halve|halving|cut|cutting\s+in\s+half|change|changing|modify|modifying|adjust|adjusting|take 2|take two)\s+(?:the\s+|my\s+|a\s+|an\s+)?(?:missed\s+|prescribed\s+)?(?:[a-z0-9\-]+\s+)*(?:dose|dosage|amount|milligrams|mg|tablets?|pills?)|"
+            r"\bcut\s+(?:the\s+|my\s+)?(?:[a-z0-9\-]+\s+)*(?:dose|tablet|pill)\s+in\s+half|"
             r"\b(?:dose|dosage|khurak|dawai)?\s*(?:ko\s*)?(?:badha|kam|double|badhau|ghata)\b|"
             r"\b(?:dose badha|dose kam|dose double|khurak badha|dawai badha)\b|"
             r"(?:डोज़|डोज|डोस|खुराक)\s*(?:बढ़ा|बढा|बढ़ा|कम|डबल)|(?:ડોઝ|ડોસ)\s*(?:વધાર|ઓછો|ડબલ)|ডোজ\s*বাড়া"
@@ -256,7 +259,7 @@ CLINICAL_BOUNDARY_PATTERNS = [
     {
         "code": "BLOCK_STOP_MEDICATION",
         "pattern": (
-            r"\b(?:(?:can i|should i|want to|shall i)\s+(?:stop|discontinue|quit|hold|pause|skip)|stop\s+taking|discontinue|quit\s+taking)\s*(?:the\s+|my\s+)?(?:[a-z0-9\-]+\s+)?(?:tablet|medication|medicine|pill|dose|aspirin|metformin|statin|insulin|blood thinner|antibiotic)?|"
+            r"\b(?:(?:can i|should i|want to|shall i)\s+(?:stop|discontinue|quit|hold|pause|skip)|stop(?:\s+taking)?|stopping(?:\s+taking)?|discontinue|discontinuing|quit(?:\s+taking)?|quitting(?:\s+taking)?|pause|pausing|skip|skipping)\s*(?:the\s+|my\s+|a\s+)?(?:prescribed\s+)?(?:[a-z0-9\-]+\s+)*(?:tablet|medication|medicine|pill|dose|aspirin|metformin|statin|insulin|blood thinner|antibiotic)?|"
             r"\b(?:[a-z0-9\-]+\s+)?(?:band\s+(?:kar\s+du|kardu|kar\s+sakta|karein|karna|du|dena)|chhod\s+(?:du|sakta|de))|"
             r"\b(?:dawa|dawai|tablet|goli|medicine|medication)\s+band|"
             r"\b(?:दवा|दवाई|गोली)\s*(?:बंद|रोक)|"
@@ -273,8 +276,8 @@ CLINICAL_BOUNDARY_PATTERNS = [
     {
         "code": "BLOCK_PRESCRIBE_NEW",
         "pattern": (
-            r"\b(?:what (?:medicine|pill|tablet|drug) should i take|prescribe|recommend a (?:medicine|cure|remedy))|"
-            r"\b(?:kaun si dawa|kya dawa lu|dawai batao|medicine batao|कौन सी दवा लूं|दवा बताओ|કઈ દવા લઉં|কোন ওষুধ খাব)\b"
+            r"\b(?:(?:what|which)\s+(?:[a-z0-9\-]+\s+)?(?:medicine|pill|tablet|drug|antibiotic|remedy)\s+should\s+i\s+take|\bprescribe\b|recommend a (?:medicine|cure|remedy))|"
+            r"\b(?:kaun\s+si\s+dawa|kaun\s+si\s+dawai|kya\s+dawa\s+lu|kya\s+dawai\s+lu|dawai\s+batao|medicine\s+batao|कौन सी दवा लूं|दवा बताओ|કઈ દવા લઉં|কোন ওষুধ খাব)\b"
         )
     }
 ]
@@ -295,6 +298,21 @@ class SafetyWorkflow:
             return trans_dict.get(lang) or trans_dict.get("en") or LOCALIZED_SAFETY_MESSAGES["BLOCK_STOP_MEDICATION"]["en"]
 
     @staticmethod
+    def _is_symptom_negated(text: str, match_start: int) -> bool:
+        """Checks if a red-flag symptom is explicitly negated by the patient (e.g. 'I do NOT have chest pain')."""
+        prefix = text[:match_start].strip().lower()
+        # If an adversative conjunction exists, only check negation in the clause following it
+        clause_break = list(re.finditer(r"\b(?:but|however|yet|except|although|lekin|parantu|kintu)\b", prefix))
+        if clause_break:
+            prefix = prefix[clause_break[-1].end():].strip()
+        recent_prefix = prefix[-45:] if len(prefix) > 45 else prefix
+        negation_patterns = [
+            r"\b(?:no|not|never|don'?t|do\s+not|doesn'?t|does\s+not|should\s+not|must\s+not|cannot|without|denies|denying|negative\s+for|free\s+of)(?:\s+\w+){0,3}\s*$",
+            r"(?:नहीं|ना|नही)\s*$"
+        ]
+        return any(re.search(p, recent_prefix) for p in negation_patterns)
+
+    @staticmethod
     def evaluate_text_safety(text: str, language: str = "en") -> Dict[str, Any]:
         """Evaluates arbitrary user input against emergency red flags and clinical boundary blocks."""
         lower = text.lower()
@@ -303,9 +321,14 @@ class SafetyWorkflow:
         # 1. Check for life-threatening emergency scenarios first
         for scenario in EMERGENCY_SCENARIOS:
             for kw in scenario["keywords"]:
-                if re.search(kw, lower, re.IGNORECASE):
+                match = re.search(kw, lower, re.IGNORECASE)
+                if match:
+                    # Guard against false positives when the symptom is explicitly negated
+                    if SafetyWorkflow._is_symptom_negated(lower, match.start()):
+                        continue
+
                     event = SafetyEvent(
-                        event_id=f"safe_{int(datetime.now().timestamp() * 1000)}",
+                        event_id=f"safe_{int(datetime.now().timestamp() * 1000)}_{uuid.uuid4().hex[:6]}",
                         scenario_code=scenario["code"],
                         triggered_at=datetime.now().isoformat(),
                         trigger_text=text,
@@ -329,9 +352,15 @@ class SafetyWorkflow:
 
         # 2. Check for clinical boundary violations
         for boundary in CLINICAL_BOUNDARY_PATTERNS:
-            if re.search(boundary["pattern"], lower, re.IGNORECASE):
+            match = re.search(boundary["pattern"], lower, re.IGNORECASE)
+            if match:
+                # Guard against false positives when the action is explicitly negated
+                # (e.g. "Do not stop the prescribed medicine without consulting the clinician")
+                if SafetyWorkflow._is_symptom_negated(lower, match.start()):
+                    continue
+
                 event = SafetyEvent(
-                    event_id=f"safe_{int(datetime.now().timestamp() * 1000)}",
+                    event_id=f"safe_{int(datetime.now().timestamp() * 1000)}_{uuid.uuid4().hex[:6]}",
                     scenario_code=boundary["code"],
                     triggered_at=datetime.now().isoformat(),
                     trigger_text=text,

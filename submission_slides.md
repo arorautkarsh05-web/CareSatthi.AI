@@ -95,7 +95,7 @@ Safety Workflow           Plan Workflow               Routine Workflow
 ## Slide 7: Measured Results, Honest Disclosures & Next Steps
 * **Verified Prototype Test Results:**  
   * 100% of tasks in synthetic fixtures include traceable source snippets.  
-  * 100% pass rate across all 23 automated integration, safety, and multi-agent tests.  
+  * 100% pass rate across 27 automated test suites (75+ clinical accuracy, safety, and multi-agent benchmark scenarios).  
   * Ambiguity detector flagged 100% of test ambiguities with zero medication hallucinations.  
   * Average local checklist & report generation latency: < 50ms.
 * **Honest Prototype Limitations:**  

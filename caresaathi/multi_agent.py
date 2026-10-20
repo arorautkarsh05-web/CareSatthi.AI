@@ -77,10 +77,28 @@ plan_protocol = Protocol(name="PlanSpecialistProtocol", version="1.0.0")
 orchestrator_protocol = Protocol(name="OrchestratorProtocol", version="1.0.0")
 
 
+# In-Memory request deduplication cache to prevent duplicate state changes
+PROCESSED_REQUEST_CACHE: Dict[str, Any] = {}
+multi_agent_audit_log = []
+
+
+def clear_multi_agent_cache():
+    """Resets cache and audit log for testing."""
+    PROCESSED_REQUEST_CACHE.clear()
+    multi_agent_audit_log.clear()
+
+
 # --- Safety Specialist Agent Handlers ---
 @safety_protocol.on_message(model=SafetyVerificationRequest, replies=SafetyVerificationResponse)
 async def handle_safety_verification(ctx: Context, sender: str, msg: SafetyVerificationRequest):
     ctx.logger.info(f"[Safety Guardian] Received check from {sender} for request: {msg.request_id}")
+    
+    # Task 1 & 6: Deduplication check to prevent duplicate state mutation
+    if msg.request_id in PROCESSED_REQUEST_CACHE:
+        ctx.logger.info(f"[Safety Guardian] Duplicate request '{msg.request_id}' detected. Returning cached verification.")
+        await ctx.send(sender, PROCESSED_REQUEST_CACHE[msg.request_id])
+        return
+
     eval_result = SafetyWorkflow.evaluate_text_safety(msg.query_text)
     response = SafetyVerificationResponse(
         request_id=msg.request_id,
@@ -90,6 +108,7 @@ async def handle_safety_verification(ctx: Context, sender: str, msg: SafetyVerif
         message=eval_result["message"],
         emergency_contact=eval_result.get("emergency_contact")
     )
+    PROCESSED_REQUEST_CACHE[msg.request_id] = response
     ctx.logger.info(f"[Safety Guardian] Verification complete. is_safe={eval_result['is_safe']}, level={eval_result['emergency_level']}")
     await ctx.send(sender, response)
 
@@ -98,6 +117,13 @@ async def handle_safety_verification(ctx: Context, sender: str, msg: SafetyVerif
 @plan_protocol.on_message(model=PlanExtractionRequest, replies=PlanExtractionResponse)
 async def handle_plan_extraction(ctx: Context, sender: str, msg: PlanExtractionRequest):
     ctx.logger.info(f"[Plan Specialist] Received extraction request from {sender} for plan: {msg.plan_id}")
+    
+    # Task 1 & 6: Deduplication check to prevent duplicate plan persistence
+    if msg.request_id in PROCESSED_REQUEST_CACHE:
+        ctx.logger.info(f"[Plan Specialist] Duplicate plan request '{msg.request_id}' detected. Returning cached response.")
+        await ctx.send(sender, PROCESSED_REQUEST_CACHE[msg.request_id])
+        return
+
     res = PlanWorkflow.process_new_care_plan(
         plan_id=msg.plan_id,
         synthetic_patient_id=msg.patient_id,
@@ -114,12 +140,22 @@ async def handle_plan_extraction(ctx: Context, sender: str, msg: PlanExtractionR
         ambiguous_tasks=res.get("ambiguous_tasks", 0),
         message=res.get("message", "Tasks extracted successfully.")
     )
+    PROCESSED_REQUEST_CACHE[msg.request_id] = response
     ctx.logger.info(f"[Plan Specialist] Extraction complete: {res.get('total_tasks', 0)} tasks extracted.")
     await ctx.send(sender, response)
 
 
-# --- Orchestrator Protocol Handlers ---
-multi_agent_audit_log = []
+# --- Orchestrator Protocol Handlers & Startup Event ---
+@orchestrator_agent.on_event("startup")
+async def orchestrator_startup_check(ctx: Context):
+    """Dispatches a genuine startup safety verification request across the agent message bus."""
+    ctx.logger.info(f"[Orchestrator] Dispatching initial safety handshake to Safety Guardian ({safety_agent.address})...")
+    req = SafetyVerificationRequest(
+        query_text="Startup system clinical boundary self-test",
+        patient_id="System-Check",
+        request_id=f"req_startup_{int(datetime.now().timestamp() * 1000)}"
+    )
+    await ctx.send(str(safety_agent.address), req)
 
 
 @orchestrator_protocol.on_message(model=SafetyVerificationResponse)

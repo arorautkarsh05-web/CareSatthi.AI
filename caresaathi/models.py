@@ -58,6 +58,8 @@ class CareTask(BaseModel):
     task_status: TaskStatus = TaskStatus.PENDING
     is_ambiguous: bool = False
     ambiguity_reason: Optional[str] = None
+    emergency_level: Optional[SafetyEmergencyLevel] = None
+    safety_warning: Optional[str] = None
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now().isoformat())
 

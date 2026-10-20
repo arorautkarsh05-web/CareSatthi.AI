@@ -9,6 +9,14 @@
 </head>
 <body>
 
+  <!-- Persistent Continuous Background Video -->
+  <div class="video-bg-container" aria-hidden="true">
+    <video class="video-bg" id="bgVideo" autoplay loop muted playsinline>
+      <source src="/static/background.mp4" type="video/mp4">
+    </video>
+    <div class="video-bg-overlay"></div>
+  </div>
+
   <!-- Main App Wrapper (Locked with blur until capsule login authentication succeeds) -->
   <div id="mainAppWrapper" class="main-app-locked">
 
@@ -138,6 +146,17 @@
               <span class="preset-chip" id="summaryTotalTasks">Total Tasks: 0</span>
               <span class="preset-chip" id="summaryProposedTasks">Proposed: 0</span>
               <span class="preset-chip" id="summaryAmbiguousTasks" style="color: #f59e0b;">Ambiguities: 0</span>
+            </div>
+          </div>
+
+          <!-- Emergency Red Flag Alert Banner -->
+          <div id="planEmergencyBanner" style="display: none; margin-bottom: 14px; padding: 14px 18px; background: rgba(239, 68, 68, 0.22); border: 1.5px solid #ef4444; border-radius: 10px; color: #fca5a5;">
+            <div style="font-weight: 800; color: #f87171; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+              <span style="font-size: 14px;">🚨 URGENT: EMERGENCY MEDICAL ASSISTANCE REQUIRED</span>
+              <span class="badge-status" style="background: #ef4444; color: #ffffff; font-weight: 700; font-size: 12px; padding: 4px 10px;">DIAL 112 (INDIA)</span>
+            </div>
+            <div id="planEmergencyBannerText" style="margin-top: 8px; font-size: 13px; line-height: 1.45; color: #f8fafc;">
+              Potential life-threatening symptoms detected in the care plan or symptom report. Seek immediate emergency medical care. CareSaathi does not diagnose conditions or claim clinical certainty. Do not delay emergency assistance.
             </div>
           </div>
 
@@ -371,7 +390,7 @@
           <div style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
             <span style="font-size: 16px;">🌐</span>
             <label for="chatLanguageSelect" style="color: #94a3b8; font-weight: 500;">Chat Language:</label>
-            <select id="chatLanguageSelect" class="form-control" style="width: auto; padding: 4px 12px; font-size: 13px; height: 34px; background: #0f172a; border-color: rgba(6, 182, 212, 0.4);">
+            <select id="chatLanguageSelect" class="form-control" style="width: auto; padding: 4px 12px; font-size: 13px; height: 34px; background: rgba(10, 16, 32, 0.75); border-color: rgba(6, 182, 212, 0.45);">
               <option value="en" selected>English (Default)</option>
               <option value="hi">हिन्दी (Hindi)</option>
               <option value="hinglish">Hinglish</option>
@@ -439,73 +458,135 @@
   </main>
   </div><!-- End #mainAppWrapper -->
 
-  <!-- Capsule Authentication Modal Overlay (User requested Login Authentication) -->
+  <!-- Capsule Authentication Modal Overlay (Split-Screen Login with CareSaathi Logo on Left Half) -->
   <div class="capsule-modal-overlay active" id="loginCapsuleModal">
-    <div class="capsule-card" id="capsuleCard">
-      <div class="capsule-badge-pill">
-        <span class="capsule-pulse-dot"></span>
-        CareSaathi Security Gateway
-      </div>
-      <div class="capsule-icon-wrap">
-        🛡️
-      </div>
-      <h2 class="capsule-title">Patient & Caregiver Login</h2>
-      <p class="capsule-subtitle">
-        Enter your credentials to unlock your doctor-guided care checklist and tracking dashboard.
-      </p>
+    <div class="login-stage-wrapper">
 
-      <!-- Security Timeout Alert Banner (2 invalid attempts -> 10s cooldown) -->
-      <div class="capsule-timeout-banner" id="capsuleTimeoutBanner" style="display: none;">
-        <div class="timeout-icon">⏱️</div>
-        <div class="timeout-text">
-          <strong>Security Cooldown Active!</strong><br>
-          2 invalid attempts detected. Please wait <span class="timeout-countdown" id="cooldownTimer">10</span>s before trying again.
+      <!-- Left Half: CareSaathi Logo, Branding & Hackathon Credentials -->
+      <div class="login-brand-hero">
+        <div class="hero-brand-logo-wrap">
+          <div class="hero-logo-icon">🩺</div>
+          <div class="hero-pulse-ring"></div>
         </div>
-      </div>
 
-      <!-- General Error Message Banner -->
-      <div class="capsule-error-msg" id="capsuleErrorMsg" style="display: none;"></div>
+        <div class="hero-event-pill">
+          <span class="hero-pill-sparkle">⚡</span>
+          <span>Fetch-A-Thon 3.0 • GCET Edition</span>
+        </div>
 
-      <form id="capsuleLoginForm" novalidate autocomplete="on">
-        <div class="capsule-input-group">
-          <label for="loginName" class="capsule-label">Full Name</label>
-          <div class="capsule-input-wrap" id="wrapName">
-            <span class="capsule-input-icon">👤</span>
-            <input type="text" id="loginName" class="capsule-input" placeholder="e.g. Ramesh Sharma" required autocomplete="name">
+        <h1 class="hero-brand-title">CareSaathi <span class="gradient-text">AI</span></h1>
+        
+        <p class="hero-brand-tagline">
+          Doctor-Guided Home Care Coordination Agent
+        </p>
+
+        <p class="hero-brand-desc">
+          Turning clinician-approved care plans into verified, trackable daily actions with deterministic safety barriers and autonomous Fetch.ai uAgents.
+        </p>
+
+        <div class="hero-feature-grid">
+          <div class="hero-feature-item">
+            <span class="hero-item-icon">🛡️</span>
+            <div class="hero-item-content">
+              <strong>Deterministic Safety</strong>
+              <span>Hard red flags trigger immediate 112 guidance</span>
+            </div>
           </div>
-          <div class="capsule-field-error" id="nameError"></div>
-        </div>
 
-        <div class="capsule-input-group">
-          <label for="loginEmail" class="capsule-label">Email ID</label>
-          <div class="capsule-input-wrap" id="wrapEmail">
-            <span class="capsule-input-icon">✉️</span>
-            <input type="email" id="loginEmail" class="capsule-input" placeholder="e.g. ramesh.sharma@example.com" required autocomplete="email">
+          <div class="hero-feature-item">
+            <span class="hero-item-icon">🔗</span>
+            <div class="hero-item-content">
+              <strong>Care-to-Action Linkage</strong>
+              <span>Every daily task is linked to confirmed doctor orders</span>
+            </div>
           </div>
-          <div class="capsule-field-error" id="emailError"></div>
-        </div>
 
-        <div class="capsule-input-group">
-          <label for="loginMobile" class="capsule-label">Mobile Number (10 Digits)</label>
-          <div class="capsule-input-wrap" id="wrapMobile">
-            <span class="capsule-input-prefix">+91</span>
-            <input type="tel" id="loginMobile" class="capsule-input" placeholder="9876543210" maxlength="10" required autocomplete="tel">
+          <div class="hero-feature-item">
+            <span class="hero-item-icon">🤖</span>
+            <div class="hero-item-content">
+              <strong>Fetch.ai Agent Bureau</strong>
+              <span>Autonomous uAgents coordinate routing & auditing</span>
+            </div>
           </div>
-          <div class="capsule-field-error" id="mobileError"></div>
+
+          <div class="hero-feature-item">
+            <span class="hero-item-icon">🌐</span>
+            <div class="hero-item-content">
+              <strong>Multi-Lingual Care</strong>
+              <span>English, Hindi, Hinglish, Marathi, Tamil, Bengali</span>
+            </div>
+          </div>
         </div>
-
-        <div class="capsule-attempts-indicator" id="attemptsIndicator">
-          Failed attempts: <span id="attemptsCount">0</span>/2 (10s timeout after 2 failed attempts)
-        </div>
-
-        <button type="submit" class="capsule-submit-btn" id="btnLoginSubmit">
-          <span>Verify & Unlock Care Dashboard →</span>
-        </button>
-      </form>
-
-      <div class="capsule-footer-note">
-        🔒 Doctor-Guided Home Care Protocol • Fetch.ai uAgent Protected
       </div>
+
+      <!-- Right Half: Security Login Capsule Card -->
+      <div class="capsule-card" id="capsuleCard">
+        <div class="capsule-badge-pill">
+          <span class="capsule-pulse-dot"></span>
+          CareSaathi Security Gateway
+        </div>
+        <div class="capsule-icon-wrap">
+          🛡️
+        </div>
+        <h2 class="capsule-title">Patient & Caregiver Login</h2>
+        <p class="capsule-subtitle">
+          Enter your credentials to unlock your doctor-guided care checklist and tracking dashboard.
+        </p>
+
+        <!-- Security Timeout Alert Banner (2 invalid attempts -> 10s cooldown) -->
+        <div class="capsule-timeout-banner" id="capsuleTimeoutBanner" style="display: none;">
+          <div class="timeout-icon">⏱️</div>
+          <div class="timeout-text">
+            <strong>Security Cooldown Active!</strong><br>
+            2 invalid attempts detected. Please wait <span class="timeout-countdown" id="cooldownTimer">10</span>s before trying again.
+          </div>
+        </div>
+
+        <!-- General Error Message Banner -->
+        <div class="capsule-error-msg" id="capsuleErrorMsg" style="display: none;"></div>
+
+        <form id="capsuleLoginForm" novalidate autocomplete="on">
+          <div class="capsule-input-group">
+            <label for="loginName" class="capsule-label">Full Name</label>
+            <div class="capsule-input-wrap" id="wrapName">
+              <span class="capsule-input-icon">👤</span>
+              <input type="text" id="loginName" class="capsule-input" placeholder="e.g. Ramesh Sharma" required autocomplete="name">
+            </div>
+            <div class="capsule-field-error" id="nameError"></div>
+          </div>
+
+          <div class="capsule-input-group">
+            <label for="loginEmail" class="capsule-label">Email ID</label>
+            <div class="capsule-input-wrap" id="wrapEmail">
+              <span class="capsule-input-icon">✉️</span>
+              <input type="email" id="loginEmail" class="capsule-input" placeholder="e.g. ramesh.sharma@example.com" required autocomplete="email">
+            </div>
+            <div class="capsule-field-error" id="emailError"></div>
+          </div>
+
+          <div class="capsule-input-group">
+            <label for="loginMobile" class="capsule-label">Mobile Number (10 Digits)</label>
+            <div class="capsule-input-wrap" id="wrapMobile">
+              <span class="capsule-input-prefix">+91</span>
+              <input type="tel" id="loginMobile" class="capsule-input" placeholder="9876543210" maxlength="10" required autocomplete="tel">
+            </div>
+            <div class="capsule-field-error" id="mobileError"></div>
+          </div>
+
+          <div class="capsule-attempts-indicator" id="attemptsIndicator">
+            Failed attempts: <span id="attemptsCount">0</span>/2 (10s timeout after 2 failed attempts)
+          </div>
+
+          <button type="submit" class="capsule-submit-btn" id="btnLoginSubmit">
+            <span>Verify & Unlock Care Dashboard →</span>
+          </button>
+        </form>
+
+        <div class="capsule-footer-note">
+          🔒 Doctor-Guided Home Care Protocol • Fetch.ai uAgent Protected
+        </div>
+      </div>
+
     </div>
   </div>
 
